@@ -1,184 +1,506 @@
-.counter {
-  font-size: 16px;
-  padding: 5px 10px;
-  border-radius: 5px;
-  color: var(--accent);
-  background: var(--accent-bg);
-  border: 2px solid transparent;
-  transition: border-color 0.3s;
-  margin-bottom: 24px;
+/* ═══════════════════════════════════════════════════════════════════════════
+   EnoXAI Chat Widget — Styles
+   All selectors are prefixed with .enox- to avoid clashing with host page.
+   ═══════════════════════════════════════════════════════════════════════════ */
 
-  &:hover {
-    border-color: var(--accent-border);
-  }
-  &:focus-visible {
-    outline: 2px solid var(--accent);
-    outline-offset: 2px;
-  }
+/* ── Tokens ──────────────────────────────────────────────────────────────── */
+.enox-root {
+  --enox-accent:      #5b4cf5;
+  --enox-accent-dark: #4639d4;
+  --enox-bg:          #ffffff;
+  --enox-surface:     #f6f6f9;
+  --enox-border:      #e4e4ec;
+  --enox-text:        #1a1a2e;
+  --enox-text-muted:  #6b6b8a;
+  --enox-user-bg:     #5b4cf5;
+  --enox-user-text:   #ffffff;
+  --enox-bot-bg:      #f0f0f8;
+  --enox-bot-text:    #1a1a2e;
+  --enox-radius:      14px;
+  --enox-shadow:      0 8px 32px rgba(91,76,245,0.18), 0 2px 8px rgba(0,0,0,0.08);
+  --enox-font:        system-ui, -apple-system, sans-serif;
+  --enox-panel-w:     380px;
+  --enox-panel-h:     560px;
+  --enox-z:           9999;
+
+  font-family: var(--enox-font);
+  position: fixed;
+  bottom: 65px;
+  right: 20px;
+  z-index: var(--enox-z);
 }
 
-.hero {
-  position: relative;
-
-  .base,
-  .framework,
-  .vite {
-    inset-inline: 0;
-    margin: 0 auto;
-  }
-
-  .base {
-    width: 170px;
-    position: relative;
-    z-index: 0;
-  }
-
-  .framework,
-  .vite {
-    position: absolute;
-  }
-
-  .framework {
-    z-index: 1;
-    top: 34px;
-    height: 28px;
-    transform: perspective(2000px) rotateZ(300deg) rotateX(44deg) rotateY(39deg)
-      scale(1.4);
-  }
-
-  .vite {
-    z-index: 0;
-    top: 107px;
-    height: 26px;
-    width: auto;
-    transform: perspective(2000px) rotateZ(300deg) rotateX(40deg) rotateY(39deg)
-      scale(0.8);
-  }
-}
-
-#center {
+/* ── Panel ───────────────────────────────────────────────────────────────── */
+.enox-panel {
+  position: absolute;
+  bottom: 68px;
+  right: 0;
+  width: var(--enox-panel-w);
+  height: var(--enox-panel-h);
+  background: var(--enox-bg);
+  border: 1px solid var(--enox-border);
+  border-radius: var(--enox-radius);
+  box-shadow: var(--enox-shadow);
   display: flex;
   flex-direction: column;
-  gap: 25px;
-  place-content: center;
-  place-items: center;
-  flex-grow: 1;
+  overflow: hidden;
 
-  @media (max-width: 1024px) {
-    padding: 32px 20px 24px;
-    gap: 18px;
-  }
+  /* Hidden by default */
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(12px) scale(0.97);
+  transform-origin: bottom right;
+  transition: opacity 0.2s ease, transform 0.2s ease;
 }
 
-#next-steps {
+.enox-panel--open {
+  opacity: 1;
+  pointer-events: all;
+  transform: translateY(0) scale(1);
+}
+
+.enox-panel--fullscreen {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  bottom: auto;
+  right: auto;
+  border-radius: 0;
+  border: none;
+}
+
+/* ── Header ──────────────────────────────────────────────────────────────── */
+.enox-header {
   display: flex;
-  border-top: 1px solid var(--border);
-  text-align: left;
-
-  & > div {
-    flex: 1 1 0;
-    padding: 32px;
-    @media (max-width: 1024px) {
-      padding: 24px 20px;
-    }
-  }
-
-  .icon {
-    margin-bottom: 16px;
-    width: 22px;
-    height: 22px;
-  }
-
-  @media (max-width: 1024px) {
-    flex-direction: column;
-    text-align: center;
-  }
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  background: var(--enox-accent);
+  color: #fff;
+  flex-shrink: 0;
 }
 
-#docs {
-  border-right: 1px solid var(--border);
-
-  @media (max-width: 1024px) {
-    border-right: none;
-    border-bottom: 1px solid var(--border);
-  }
-}
-
-#next-steps ul {
-  list-style: none;
-  padding: 0;
+.enox-header-brand {
   display: flex;
+  align-items: center;
   gap: 8px;
-  margin: 32px 0 0;
-
-  .logo {
-    height: 18px;
-  }
-
-  a {
-    color: var(--text-h);
-    font-size: 16px;
-    border-radius: 6px;
-    background: var(--social-bg);
-    display: flex;
-    padding: 6px 12px;
-    align-items: center;
-    gap: 8px;
-    text-decoration: none;
-    transition: box-shadow 0.3s;
-
-    &:hover {
-      box-shadow: var(--shadow);
-    }
-    .button-icon {
-      height: 18px;
-      width: 18px;
-    }
-  }
-
-  @media (max-width: 1024px) {
-    margin-top: 20px;
-    flex-wrap: wrap;
-    justify-content: center;
-
-    li {
-      flex: 1 1 calc(50% - 8px);
-    }
-
-    a {
-      width: 100%;
-      justify-content: center;
-      box-sizing: border-box;
-    }
-  }
 }
 
-#spacer {
-  height: 88px;
-  border-top: 1px solid var(--border);
-  @media (max-width: 1024px) {
-    height: 48px;
-  }
+.enox-logo {
+  font-size: 18px;
 }
 
-.ticks {
-  position: relative;
+.enox-brand-name {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+
+.enox-header-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.enox-icon-btn {
+  background: transparent;
+  border: none;
+  color: rgba(255,255,255,0.85);
+  font-size: 16px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  line-height: 1;
+  transition: background 0.15s;
+}
+
+.enox-icon-btn:hover {
+  background: rgba(255,255,255,0.15);
+  color: #fff;
+}
+
+/* ── Body ────────────────────────────────────────────────────────────────── */
+.enox-body {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── User Registration Form ──────────────────────────────────────────────── */
+.enox-form {
+  padding: 28px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.enox-form-header {
+  text-align: center;
+  margin-bottom: 4px;
+}
+
+.enox-avatar {
+  font-size: 28px;
+  color: var(--enox-accent);
+  margin-bottom: 8px;
+}
+
+.enox-form-header h2 {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--enox-text);
+  margin: 0 0 4px;
+}
+
+.enox-form-header p {
+  font-size: 13px;
+  color: var(--enox-text-muted);
+  margin: 0;
+}
+
+.enox-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.enox-field label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--enox-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.enox-field input {
+  padding: 10px 14px;
+  border: 1.5px solid var(--enox-border);
+  border-radius: 8px;
+  font-size: 14px;
+  color: var(--enox-text);
+  background: var(--enox-bg);
+  outline: none;
+  transition: border-color 0.15s;
+  font-family: var(--enox-font);
+}
+
+.enox-field input:focus {
+  border-color: var(--enox-accent);
+}
+
+.enox-field input:disabled {
+  opacity: 0.6;
+}
+
+.enox-btn-primary {
+  padding: 11px 16px;
+  background: var(--enox-accent);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+  font-family: var(--enox-font);
+}
+
+.enox-btn-primary:hover:not(:disabled) {
+  background: var(--enox-accent-dark);
+}
+
+.enox-btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.enox-error {
+  font-size: 12px;
+  color: #d94040;
+  margin: 0;
+}
+
+.enox-error--global {
+  padding: 0 24px 12px;
+}
+
+/* ── Chat greeting bar ───────────────────────────────────────────────────── */
+.enox-chat-window {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.enox-chat-greeting {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 14px;
+  background: var(--enox-surface);
+  border-bottom: 1px solid var(--enox-border);
+  font-size: 13px;
+  color: var(--enox-text-muted);
+  flex-shrink: 0;
+}
+
+/* ── Message list ────────────────────────────────────────────────────────── */
+.enox-msg-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  scroll-behavior: smooth;
+}
+
+.enox-msg-list::-webkit-scrollbar { width: 4px; }
+.enox-msg-list::-webkit-scrollbar-track { background: transparent; }
+.enox-msg-list::-webkit-scrollbar-thumb { background: var(--enox-border); border-radius: 2px; }
+
+.enox-empty {
+  text-align: center;
+  color: var(--enox-text-muted);
+  font-size: 13px;
+  margin: auto;
+  padding: 24px;
+  line-height: 1.6;
+}
+
+/* ── Message bubble ──────────────────────────────────────────────────────── */
+.enox-msg {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  max-width: 100%;
+}
+
+.enox-msg--user {
+  flex-direction: row-reverse;
+}
+
+.enox-msg-avatar {
+  font-size: 14px;
+  color: var(--enox-accent);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.enox-msg-bubble {
+  max-width: 82%;
+  padding: 10px 13px;
+  border-radius: 12px;
+  font-size: 13.5px;
+  line-height: 1.6;
+  word-break: break-word;
+}
+
+.enox-msg--user .enox-msg-bubble {
+  background: var(--enox-user-bg);
+  color: var(--enox-user-text);
+  border-bottom-right-radius: 4px;
+}
+
+.enox-msg--bot .enox-msg-bubble {
+  background: var(--enox-bot-bg);
+  color: var(--enox-bot-text);
+  border-bottom-left-radius: 4px;
+}
+
+/* Markdown content inside bot bubbles */
+.enox-msg--bot .enox-msg-bubble p  { margin: 0 0 6px; }
+.enox-msg--bot .enox-msg-bubble p:last-child { margin-bottom: 0; }
+.enox-msg--bot .enox-msg-bubble ul,
+.enox-msg--bot .enox-msg-bubble ol { margin: 4px 0; padding-left: 18px; }
+.enox-msg--bot .enox-msg-bubble li { margin-bottom: 2px; }
+.enox-msg--bot .enox-msg-bubble code {
+  background: rgba(91,76,245,0.1);
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-size: 12px;
+}
+.enox-msg--bot .enox-msg-bubble pre {
+  background: #1a1a2e;
+  color: #e8e8f5;
+  padding: 10px 12px;
+  border-radius: 8px;
+  overflow-x: auto;
+  font-size: 12px;
+  margin: 6px 0;
+}
+.enox-msg--bot .enox-msg-bubble pre code {
+  background: none;
+  padding: 0;
+  color: inherit;
+}
+.enox-msg--bot .enox-msg-bubble table {
+  border-collapse: collapse;
   width: 100%;
+  font-size: 12px;
+  margin: 6px 0;
+}
+.enox-msg--bot .enox-msg-bubble th,
+.enox-msg--bot .enox-msg-bubble td {
+  border: 1px solid var(--enox-border);
+  padding: 5px 8px;
+  text-align: left;
+}
+.enox-msg--bot .enox-msg-bubble th {
+  background: var(--enox-surface);
+}
 
-  &::before,
-  &::after {
-    content: '';
-    position: absolute;
-    top: -4.5px;
-    border: 5px solid transparent;
-  }
+/* ── Input bar ───────────────────────────────────────────────────────────── */
+.enox-input-bar {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  padding: 10px 12px;
+  border-top: 1px solid var(--enox-border);
+  background: var(--enox-bg);
+  flex-shrink: 0;
+}
 
-  &::before {
-    left: 0;
-    border-left-color: var(--border);
+.enox-input {
+  flex: 1;
+  padding: 9px 12px;
+  border: 1.5px solid var(--enox-border);
+  border-radius: 10px;
+  font-size: 13.5px;
+  font-family: var(--enox-font);
+  color: var(--enox-text);
+  background: var(--enox-bg);
+  resize: none;
+  outline: none;
+  max-height: 120px;
+  overflow-y: auto;
+  line-height: 1.5;
+  transition: border-color 0.15s;
+}
+
+.enox-input:focus {
+  border-color: var(--enox-accent);
+}
+
+.enox-btn-send,
+.enox-btn-stop {
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 50%;
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, opacity 0.15s;
+  flex-shrink: 0;
+  font-family: var(--enox-font);
+}
+
+.enox-btn-send {
+  background: var(--enox-accent);
+  color: #fff;
+}
+
+.enox-btn-send:hover:not(:disabled) {
+  background: var(--enox-accent-dark);
+}
+
+.enox-btn-send:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.enox-btn-stop {
+  background: #f5e8e8;
+  color: #d94040;
+}
+
+.enox-btn-stop:hover {
+  background: #fad5d5;
+}
+
+/* ── Ghost / small buttons ───────────────────────────────────────────────── */
+.enox-btn-ghost {
+  background: transparent;
+  border: none;
+  font-size: 12px;
+  color: var(--enox-text-muted);
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-family: var(--enox-font);
+  transition: background 0.15s;
+}
+
+.enox-btn-ghost:hover {
+  background: var(--enox-border);
+  color: var(--enox-text);
+}
+
+.enox-btn-ghost:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.enox-btn-center {
+  display: block;
+  margin: 0 auto 8px;
+}
+
+.enox-btn-sm {
+  font-size: 11px;
+  padding: 3px 7px;
+}
+
+/* ── Floating launcher button ────────────────────────────────────────────── */
+.enox-launcher {
+  position: relative;
+  width: 35px;
+  height: 35px;
+  border-radius: 50%;
+  background: var(--enox-accent);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(91,76,245,0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, transform 0.15s;
+}
+
+.enox-launcher:hover {
+  background: var(--enox-accent-dark);
+  transform: scale(1.05);
+}
+
+.enox-launcher--active {
+  background: var(--enox-accent-dark);
+}
+
+.enox-launcher svg {
+  width: 20px;
+  height: 20px;
+  pointer-events: none;
+}
+
+/* ── Responsive: narrow screens ──────────────────────────────────────────── */
+@media (max-width: 480px) {
+  .enox-root {
+    bottom: 30px;
+    right: 10px;
   }
-  &::after {
+.enox-launcher {
+    width: 40px;
+    height: 40px;
+}
+  .enox-panel {
+    width: calc(100vw - 32px);
+    height: 70vh;
     right: 0;
-    border-right-color: var(--border);
+    bottom: 64px;
   }
 }

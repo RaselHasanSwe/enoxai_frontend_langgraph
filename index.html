@@ -2,12 +2,19 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>frontend</title>
+    <title>EnoXAI Chat — Dev Preview</title>
   </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
+  <body style="min-height:100vh;background:#f5f5f5;font-family:system-ui;">
+    <!-- Dev preview: simulates the host page -->
+    <div style="padding:40px;">
+      <h1>Laravel Page Simulation</h1>
+      <p>The chat widget appears in the bottom-right corner.</p>
+    </div>
+
+    <!-- The Web Component: just this tag goes into your Blade layout -->
+    <enox-chat></enox-chat>
+
+    <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

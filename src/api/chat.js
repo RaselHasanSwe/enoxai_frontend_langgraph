@@ -1,0 +1,82 @@
+// All API calls are centralised here.
+// Change BASE_URL to your production FastAPI URL before deploying.
+
+const BASE_URL = 'http://127.0.0.1:9000/api/v1'
+
+// ── Create or fetch a user session ──────────────────────────────────────────
+export async function createUser(name, email) {
+  const res = await fetch(`${BASE_URL}/chat/user`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, email }),
+  })
+  if (!res.ok) throw new Error('Failed to create user')
+  return res.json() // { id, name, email, session_id }
+}
+
+// ── Fetch paginated chat history ─────────────────────────────────────────────
+export async function fetchHistory(userId, page = 1) {
+  const res = await fetch(
+    `${BASE_URL}/chat/history?user_id=${userId}&page=${page}`
+  )
+  if (!res.ok) throw new Error('Failed to fetch history')
+  return res.json() // { user, data, pagination }
+}
+
+// ── Stream a chat response via SSE ───────────────────────────────────────────
+// onToken(token)  called for every streamed chunk
+// onDone()        called when stream finishes
+// Returns an AbortController so the caller can cancel
+export function streamMessage(message, sessionId, onToken, onDone, onError) {
+  const controller = new AbortController()
+
+  fetch(`${BASE_URL}/chat/stream`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message, session_id: sessionId }),
+    signal: controller.signal,
+  })
+    .then(async (res) => {
+      if (!res.ok) throw new Error('Stream request failed')
+
+      const reader = res.body.getReader()
+      const decoder = new TextDecoder()
+      let buffer = ''
+
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+
+        buffer += decoder.decode(value, { stream: true })
+
+        // SSE lines look like: data: {"token": "..."}\n\n
+        const lines = buffer.split('\n')
+        buffer = lines.pop() // keep incomplete last line
+
+        for (const line of lines) {
+          const trimmed = line.trim()
+          if (!trimmed.startsWith('data:')) continue
+
+          const jsonStr = trimmed.slice(5).trim()
+          if (!jsonStr) continue
+
+          try {
+            const parsed = JSON.parse(jsonStr)
+            if (parsed.error) {
+              onError(parsed.error)
+              return
+            }
+            if (parsed.token) onToken(parsed.token)
+          } catch {
+            // ignore malformed lines
+          }
+        }
+      }
+      onDone()
+    })
+    .catch((err) => {
+      if (err.name !== 'AbortError') onError(err.message)
+    })
+
+  return controller
+}

@@ -1,104 +1,94 @@
-# EnoxAI Frontend
+# EnoXAI Chat — Laravel Integration Guide
 
-EnoxAI Frontend is a React + TypeScript web application that provides a real-time chat interface for interacting with the EnoxAI backend.
-
-## Features
-
-* Real-time AI chat experience
-* React + TypeScript architecture
-* Fast development workflow using Vite
-* Session-based chat conversations
-* Responsive user interface
-* Integration with EnoxAI Backend APIs
-
-## Prerequisites
-
-Before running the project, ensure you have:
-
-* Node.js (v18 or later recommended)
-* npm
-
-## Installation
-
-Clone the repository:
-
-```bash
-git clone <repository-url>
-cd enoxai-frontend
-```
-
-Install dependencies:
-
-```bash
-npm install
-```
-
-## Running the Application
-
-Start the development server:
-
-```bash
-npm run dev
-```
-
-The application will be available at:
-
-```text
-http://localhost:5173
-```
-
-## Environment Configuration
-
-Create a `.env` file in the project root if required:
-
-```env
-VITE_API_URL=http://localhost:8000
-```
-
-Replace the URL with your EnoxAI backend endpoint.
-
-## Backend Requirement
-
-This frontend requires the EnoxAI Backend service to be running and accessible.
-
-Ensure the backend API is started before using the chat application.
-
-## Build for Production
-
-Create a production build:
+## 1. Build the project
 
 ```bash
 npm run build
 ```
 
-Preview the production build locally:
+This produces a `dist/` folder.
 
-```bash
-npm run preview
+## 2. Copy files to Laravel
+
+Copy the entire `dist/` folder into your Laravel project:
+
+```
+dist/  →  public/chatbox/
 ```
 
-## Technology Stack
+Your `public/chatbox/` should look like:
 
-* React
-* TypeScript
-* Vite
-* HTML5
-* CSS3
-* EnoxAI Backend API
-
-## Project Structure
-
-```text
-src/
-├── components/
-├── assets/
-├── services/
-├── hooks/
-├── types/
-├── App.tsx
-└── main.tsx
+```
+public/
+  chatbox/
+    index.html
+    assets/
+      index-xxxxx.js
+      index-xxxxx.css
 ```
 
-## License
+## 3. Add to your Blade layout
 
-This project is intended for use with the EnoxAI platform.
+Open `resources/views/layouts/app.blade.php` (or whichever is your master layout).
+
+Add these two lines **before the closing `</body>` tag**:
+
+```html
+<!-- EnoXAI Chat Widget -->
+<link  rel="stylesheet" href="/chatbox/assets/index-xxxxx.css">
+<script src="/chatbox/assets/index-xxxxx.js" defer type="module"></script>
+<enox-chat></enox-chat>
+```
+
+> Replace `index-xxxxx` with the actual hashed filenames from `public/chatbox/assets/`.
+> To avoid updating the filename every rebuild, see step 4.
+
+## 4. (Recommended) Fix asset filenames
+
+To keep filenames stable between builds, add this to `vite.config.js`:
+
+```js
+build: {
+  rollupOptions: {
+    output: {
+      entryFileNames: 'assets/chat.js',
+      chunkFileNames: 'assets/chat-[hash].js',
+      assetFileNames: 'assets/chat.[ext]',
+    },
+  },
+},
+```
+
+Then your Blade tags become permanent:
+
+```html
+<link  rel="stylesheet" href="/chatbox/assets/chat.css">
+<script src="/chatbox/assets/chat.js" defer type="module"></script>
+<enox-chat></enox-chat>
+```
+
+## 5. CORS — FastAPI side
+
+Make sure your FastAPI app allows your Laravel domain.
+In `main.py`:
+
+```python
+from fastapi.middleware.cors import CORSMiddleware
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["https://your-laravel-site.com", "http://localhost:8000"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+```
+
+## 6. Change the API base URL for production
+
+In `src/api/chat.js`, update:
+
+```js
+const BASE_URL = 'https://your-fastapi-domain.com/api/v1'
+```
+
+Then rebuild and re-copy to `public/chatbox/`.
