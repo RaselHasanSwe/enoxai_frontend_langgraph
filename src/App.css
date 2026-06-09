@@ -5,14 +5,14 @@
 
 /* ── Tokens ──────────────────────────────────────────────────────────────── */
 .enox-root {
-  --enox-accent:      #5b4cf5;
+  --enox-accent:      #000000;
   --enox-accent-dark: #4639d4;
   --enox-bg:          #ffffff;
   --enox-surface:     #f6f6f9;
   --enox-border:      #e4e4ec;
   --enox-text:        #1a1a2e;
   --enox-text-muted:  #6b6b8a;
-  --enox-user-bg:     #5b4cf5;
+  --enox-user-bg:     #000000;
   --enox-user-text:   #ffffff;
   --enox-bot-bg:      #f0f0f8;
   --enox-bot-text:    #1a1a2e;
@@ -88,7 +88,7 @@
 }
 
 .enox-logo {
-  font-size: 18px;
+  font-size: 20px;
 }
 
 .enox-brand-name {
@@ -282,10 +282,10 @@
 }
 
 .enox-msg-avatar {
-  font-size: 14px;
+  font-size: 19px;
   color: var(--enox-accent);
   flex-shrink: 0;
-  margin-top: 2px;
+  margin-top: 4px;
 }
 
 .enox-msg-bubble {
@@ -482,9 +482,10 @@
 }
 
 .enox-launcher svg {
-  width: 20px;
-  height: 20px;
+  width: 17px;
+  height: 17px;
   pointer-events: none;
+  color: white;
 }
 
 /* ── Responsive: narrow screens ──────────────────────────────────────────── */

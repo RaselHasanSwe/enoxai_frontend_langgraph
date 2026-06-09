@@ -53,7 +53,7 @@ export default function App() {
         <div className="enox-header">
           <div className="enox-header-brand">
             <span className="enox-logo">✦</span>
-            <span className="enox-brand-name">EnoXAI</span>
+            <span className="enox-brand-name">EnoX AI</span>
           </div>
           <div className="enox-header-actions">
             {/* Fullscreen toggle */}
