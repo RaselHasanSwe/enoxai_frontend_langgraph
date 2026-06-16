@@ -1,7 +1,7 @@
 // All API calls are centralised here.
 // Change BASE_URL to your production FastAPI URL before deploying.
 
-const BASE_URL = 'http://127.0.0.1:9000/api/v1'
+const BASE_URL = 'http://127.0.0.1:8080/api/v1'
 
 // ── Create or fetch a user session ──────────────────────────────────────────
 export async function createUser(name, email) {
@@ -24,10 +24,14 @@ export async function fetchHistory(userId, page = 1) {
 }
 
 // ── Stream a chat response via SSE ───────────────────────────────────────────
-// onToken(token)  called for every streamed chunk
-// onDone()        called when stream finishes
-// Returns an AbortController so the caller can cancel
-export function streamMessage(message, sessionId, onToken, onDone, onError) {
+// Callbacks:
+//   onToken(token)          — each streamed text chunk
+//   onProductData(products) — full product array from search_products tool
+//   onDone()                — stream finished cleanly
+//   onError(message)        — something went wrong
+//
+// Returns an AbortController so the caller can cancel.
+export function streamMessage(message, sessionId, onToken, onProductData, onDone, onError) {
   const controller = new AbortController()
 
   fetch(`${BASE_URL}/chat/stream`, {
@@ -49,7 +53,7 @@ export function streamMessage(message, sessionId, onToken, onDone, onError) {
 
         buffer += decoder.decode(value, { stream: true })
 
-        // SSE lines look like: data: {"token": "..."}\n\n
+        // SSE lines look like: data: {...}\n\n
         const lines = buffer.split('\n')
         buffer = lines.pop() // keep incomplete last line
 
@@ -62,11 +66,21 @@ export function streamMessage(message, sessionId, onToken, onDone, onError) {
 
           try {
             const parsed = JSON.parse(jsonStr)
+
             if (parsed.error) {
               onError(parsed.error)
               return
             }
-            if (parsed.token) onToken(parsed.token)
+
+            // Normal text token
+            if (parsed.token !== undefined) {
+              onToken(parsed.token)
+            }
+
+            // Product data event — only emitted when search_products fires
+            if (parsed.product_data !== undefined) {
+              onProductData(parsed.product_data)
+            }
           } catch {
             // ignore malformed lines
           }

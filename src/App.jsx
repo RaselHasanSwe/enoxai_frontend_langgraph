@@ -3,6 +3,7 @@ import { useChat } from './hooks/useChat'
 import UserForm from './components/UserForm'
 import ChatWindow from './components/ChatWindow'
 import './App.css'
+import './styles/products.css'
 
 // ── Size modes ────────────────────────────────────────────────────────────────
 // 'normal'     → default floating box (380 × 560 px)

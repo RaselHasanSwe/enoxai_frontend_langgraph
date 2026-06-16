@@ -2,9 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { createUser, fetchHistory, streamMessage } from '../api/chat'
 
 const STORAGE_KEY = 'enox_user'
-const PAGE_SIZE = 20
 
-// ── Persisted user helpers ───────────────────────────────────────────────────
 function loadUser() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
@@ -18,10 +16,9 @@ function saveUser(user) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(user))
 }
 
-// ── Main hook ────────────────────────────────────────────────────────────────
 export function useChat() {
-  const [user, setUser] = useState(loadUser)           // null = not registered
-  const [messages, setMessages] = useState([])         // { id, role, content, ts }
+  const [user, setUser] = useState(loadUser)
+  const [messages, setMessages] = useState([])
   const [inputValue, setInputValue] = useState('')
   const [isStreaming, setIsStreaming] = useState(false)
   const [historyPage, setHistoryPage] = useState(1)
@@ -35,7 +32,6 @@ export function useChat() {
     return ++nextId.current
   }
 
-  // ── Register / get user ────────────────────────────────────────────────────
   async function registerUser(name, email) {
     const result = await createUser(name, email)
     saveUser(result)
@@ -43,7 +39,6 @@ export function useChat() {
     return result
   }
 
-  // ── Load history on mount when user exists ─────────────────────────────────
   useEffect(() => {
     if (!user) return
     loadHistory(user.id, 1, true)
@@ -56,18 +51,18 @@ export function useChat() {
       setTotalPages(res.pagination.total_pages)
       setHistoryPage(res.pagination.current_page)
 
-      // API returns newest-first, we want oldest-first for display
       const mapped = [...res.data].reverse().map((m) => ({
         id: makeId(),
         role: m.role === 'ai' ? 'assistant' : 'user',
         content: m.message,
         ts: m.timestamp,
+        products: undefined,
+        streaming: false,
       }))
 
       if (replace) {
         setMessages(mapped)
       } else {
-        // Prepend older messages (user scrolled up for more)
         setMessages((prev) => [...mapped, ...prev])
       }
     } finally {
@@ -80,13 +75,13 @@ export function useChat() {
     await loadHistory(user.id, historyPage + 1, false)
   }
 
-  // ── Send message ───────────────────────────────────────────────────────────
   const sendMessage = useCallback(
     async (text) => {
       if (!text.trim() || isStreaming || !user) return
 
-      const userMsg = { id: makeId(), role: 'user', content: text, ts: null }
-      const botMsg = { id: makeId(), role: 'assistant', content: '', ts: null }
+      const userMsg = { id: makeId(), role: 'user', content: text, ts: null, streaming: false }
+      const botMsgId = makeId()
+      const botMsg = { id: botMsgId, role: 'assistant', content: '', ts: null, products: undefined, streaming: true }
 
       setMessages((prev) => [...prev, userMsg, botMsg])
       setIsStreaming(true)
@@ -95,22 +90,42 @@ export function useChat() {
       streamController.current = streamMessage(
         text,
         user.session_id,
-        // onToken – append each chunk to the last bot message
+
+        // onToken — stream tokens into content as they arrive
+        // Message.jsx will suppress rendering if content starts with {"
         (token) => {
           setMessages((prev) =>
             prev.map((m) =>
-              m.id === botMsg.id ? { ...m, content: m.content + token } : m
+              m.id === botMsgId ? { ...m, content: m.content + token } : m
             )
           )
         },
-        // onDone
-        () => setIsStreaming(false),
+
+        // onProductData — attach product array to the message
+        (products) => {
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === botMsgId ? { ...m, products } : m
+            )
+          )
+        },
+
+        // onDone — mark streaming finished so Message renders final content
+        () => {
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === botMsgId ? { ...m, streaming: false } : m
+            )
+          )
+          setIsStreaming(false)
+        },
+
         // onError
         (err) => {
           setMessages((prev) =>
             prev.map((m) =>
-              m.id === botMsg.id
-                ? { ...m, content: `⚠️ Error: ${err}` }
+              m.id === botMsgId
+                ? { ...m, content: `⚠️ Error: ${err}`, streaming: false }
                 : m
             )
           )
@@ -123,6 +138,9 @@ export function useChat() {
 
   function cancelStream() {
     streamController.current?.abort()
+    setMessages((prev) =>
+      prev.map((m) => (m.streaming ? { ...m, streaming: false } : m))
+    )
     setIsStreaming(false)
   }
 
