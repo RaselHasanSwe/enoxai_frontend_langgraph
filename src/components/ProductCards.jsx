@@ -111,12 +111,14 @@ function ProductCard({product, onPrev, onNext}) {
         >
             <div className="enox-product-img-block">
                 {product_image ? (
-                    <img
-                        className="enox-product-img-v2"
-                        src={"https://images.enorsia.com/" + product_image + "/pdrelimg"}
-                        alt={product_name}
-                        loading="lazy"
-                    />
+                    <div className="image_parent_fixed_ratio">
+                        <img
+                            className="enox-product-img-v2"
+                            src={"https://images.enorsia.com/" + product_image + "/pdrelimg"}
+                            alt={product_name}
+                            loading="lazy"
+                        />
+                    </div>
                 ) : (
                     <div className="enox-product-img-placeholder-v2">✦</div>
                 )}
@@ -130,16 +132,6 @@ function ProductCard({product, onPrev, onNext}) {
                 )}
 
                 {/* The only navigation control on the image — centred, glass-style */}
-                {onPrev && (
-                    <button className="enox-img-arrow enox-img-arrow--left" onClick={onPrev} aria-label="Previous product">
-                        ‹
-                    </button>
-                )}
-                {onNext && (
-                    <button className="enox-img-arrow enox-img-arrow--right" onClick={onNext} aria-label="Next product">
-                        ›
-                    </button>
-                )}
 
                 {/* Title always visible on the image. Price/colour/size slide up
             on hover (or on first tap on touch devices). */}
@@ -214,6 +206,17 @@ function ProductCard({product, onPrev, onNext}) {
                     </div>
                 </div>
             </div>
+
+            {onPrev && (
+                <button className="enox-img-arrow enox-img-arrow--left" onClick={onPrev} aria-label="Previous product">
+                    ‹
+                </button>
+            )}
+            {onNext && (
+                <button className="enox-img-arrow enox-img-arrow--right" onClick={onNext} aria-label="Next product">
+                    ›
+                </button>
+            )}
         </a>
     )
 }

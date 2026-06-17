@@ -1,5 +1,6 @@
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import rehypeRaw from 'rehype-raw';
 import ProductCards from './ProductCards'
 
 export default function Message({role, content, products, streaming}) {
@@ -69,6 +70,11 @@ export default function Message({role, content, products, streaming}) {
         }
     }
 
+    const preserveLineBreaks = (text) => {
+        if (!text) return '▋';
+        return text.replace(/\n\n/g, '\n\n').replace(/\n/g, '  \n');
+    };
+
     // Render the message
     return (
         <div className="enox-msg enox-msg--bot">
@@ -81,8 +87,8 @@ export default function Message({role, content, products, streaming}) {
                         <span>Sorry, I couldn't find those products right now.</span>
                     )
                 ) : (
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                        {displayText || '▋'}
+                    <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
+                        {preserveLineBreaks(displayText)}
                     </ReactMarkdown>
                 )}
             </div>
