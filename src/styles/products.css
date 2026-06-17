@@ -1,381 +1,453 @@
 /* ==========================================================================
    Product Cards — inline chat results from search_products tool
-   Add this file via:  import '../styles/products.css'  in your App or main
    ========================================================================== */
 
-/* ── Rail (horizontal scroll container) ─────────────────────────────────── */
+/* ── Legacy rail (kept for compatibility) ─────────────────────────────────── */
 .enox-product-rail {
-  display: flex;
-  gap: 10px;
-  overflow-x: auto;
-  padding: 12px 2px 4px;
-  margin-top: 10px;
-  scroll-snap-type: x mandatory;
-  -webkit-overflow-scrolling: touch;
-
-  /* Hide scrollbar on webkit but keep it functional */
-  scrollbar-width: thin;
-  scrollbar-color: rgba(0, 0, 0, 0.15) transparent;
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    padding: 12px 2px 4px;
+    margin-top: 10px;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 0, 0, 0.15) transparent;
 }
 
 .enox-product-rail::-webkit-scrollbar {
-  height: 4px;
+    height: 4px;
 }
+
 .enox-product-rail::-webkit-scrollbar-track {
-  background: transparent;
+    background: transparent;
 }
+
 .enox-product-rail::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.18);
-  border-radius: 2px;
+    background: rgba(0, 0, 0, 0.18);
+    border-radius: 2px;
 }
 
-/* ── Individual card ─────────────────────────────────────────────────────── */
-.enox-product-card {
-  flex: 0 0 160px;
-  display: flex;
-  flex-direction: column;
-  background: #ffffff;
-  border: 1px solid #e8e8e8;
-  border-radius: 12px;
-  overflow: hidden;
-  text-decoration: none;
-  color: inherit;
-  scroll-snap-align: start;
-  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
-  cursor: pointer;
+/* ==========================================================================
+   V2 Product Card — full-bleed photo card. Title always sits on the image;
+   price/colour/size live in a glass panel that slides up on hover (or on
+   first tap on touch devices, see .enox-product-card-v2--revealed).
+   ========================================================================== */
+
+/* ── Carousel wrapper ────────────────────────────────────────────────────── */
+.enox-product-carousel {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
 }
 
-.enox-product-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.10);
-  border-color: #c8c8c8;
+/* ── Card shell ──────────────────────────────────────────────────────────── */
+.enox-product-card-v2 {
+    display: block;
+    text-decoration: none;
+    color: inherit;
+    border-radius: 12px;
+    overflow: visible;
+    position: relative;
+    transition: box-shadow 0.25s ease, transform 0.25s ease;
 }
 
-.enox-product-card:focus-visible {
-  outline: 2px solid #2563eb;
-  outline-offset: 2px;
+.enox-product-card-v2:hover {
+    box-shadow: 0 10px 26px rgba(20, 20, 40, 0.18);
+    transform: translateY(-1px);
 }
 
-/* ── Image wrapper ───────────────────────────────────────────────────────── */
-.enox-product-img-wrap {
-  position: relative;
-  width: 100%;
-  aspect-ratio: 3 / 4;
-  background: #f7f7f7;
-  overflow: hidden;
+/* ── Image block — fixed ratio so every card in the carousel lines up
+   the same; keeps the card predictable enough to read at a glance ───────── */
+.enox-product-img-block {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 3 / 4;
+    display: block;
 }
 
-.enox-product-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-  transition: transform 0.3s ease;
+.enox-product-img-v2 {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: cover;
+    object-position: center top;
+    transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.enox-product-card:hover .enox-product-img {
-  transform: scale(1.04);
+.enox-product-card-v2:hover .enox-product-img-v2 {
+    transform: scale(1.045);
 }
 
-.enox-product-img-placeholder {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 28px;
-  color: #d0d0d0;
-  background: #f3f3f3;
+.enox-product-img-placeholder-v2 {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    color: #555;
+    background: #1a1a1a;
 }
 
-/* Discount badge — top-right corner */
-.enox-product-badge {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  background: #e63030;
-  color: #fff;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  padding: 2px 6px;
-  border-radius: 20px;
-  line-height: 1.4;
+/* ── Discount badge — restrained, editorial, not an alarm colour ─────────── */
+.enox-product-badge-v2 {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    z-index: 3;
+    background: rgba(14, 14, 18, 0.92);
+    color: red;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    padding: 4px 9px;
+    border-radius: 3px;
+    border: 1px solid rgba(217, 181, 104, 0.4);
+    line-height: 1.3;
 }
 
-/* Out of stock overlay */
-.enox-product-oos {
-  position: absolute;
-  inset: 0;
-  background: rgba(255, 255, 255, 0.70);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 11px;
-  font-weight: 600;
-  color: #666;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+/* ── Out of stock ────────────────────────────────────────────────────────── */
+.enox-product-oos-v2 {
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11.5px;
+    font-weight: 600;
+    color: #fff;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
 }
 
-/* ── Text info block ─────────────────────────────────────────────────────── */
-.enox-product-info {
-  padding: 10px 10px 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  flex: 1;
+/* ── Left / Right arrows — the ONLY navigation control, centred on the
+   image, soft glass style so they read as premium rather than utilitarian ── */
+.enox-img-arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 10;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    background: rgba(20, 20, 24, 0.38);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    color: #fff;
+    font-size: 17px;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    opacity: 0.6;
+    transition: opacity 0.2s ease, transform 0.2s ease, background 0.15s, border-color 0.15s;
 }
 
-.enox-product-name {
-  margin: 0;
-  font-size: 12px;
-  font-weight: 500;
-  color: #1a1a1a;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+.enox-img-arrow--left {
+    left: -25px;
 }
-.enox-product-code {
-  font-size: 11px;
-  color: #1a1a2e;
+
+.enox-img-arrow--right {
+    right:-25px;
+}
+
+.enox-product-card-v2:hover .enox-img-arrow {
+    opacity: 1;
+}
+
+.enox-img-arrow:hover {
+    background: rgba(20, 20, 24, 0.6);
+    border-color: rgba(255, 255, 255, 0.6);
+    transform: translateY(-50%) scale(1.08);
+}
+
+.enox-img-arrow:active {
+    transform: translateY(-50%) scale(0.93);
+}
+
+@media (hover: none) {
+    .enox-img-arrow {
+        opacity: 0.8;
+    }
+}
+
+/* ── Overlay — title bar always visible, glass body slides up on hover ───── */
+.enox-product-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 5;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    pointer-events: none;
+}
+
+.enox-overlay-title-bar {
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.82) 0%, rgba(0, 0, 0, 0.45) 60%, rgba(0, 0, 0, 0) 100%);
+    padding: 15px 13px 11px;
+}
+
+.enox-overlay-name {
+    display: block;
+    font-size: 12.5px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    color: #fff;
+    line-height: 1.4;
+    text-shadow: 0 1px 6px rgba(0, 0, 0, 0.6);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* Grid-based reveal — animates to the panel's natural height with no
+   fixed max-height guess, so price/colour/size never clip or overlap
+   regardless of how many swatches or sizes a product has. */
+.enox-overlay-body {
+    display: none;
+    grid-template-rows: 0fr;
+    overflow: hidden;
+    background: rgba(10, 10, 16, 0.94);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    pointer-events: auto;
+    max-height: 0;
+    transition: opacity 0.3s ease, max-height 1s ease;
+}
+
+.enox-product-card-v2:hover .enox-overlay-body,
+.enox-product-card-v2:focus-within .enox-overlay-body,
+.enox-product-card-v2--revealed .enox-overlay-body {
+    grid-template-rows: 1fr;
+}
+
+.enox-product-card-v2:hover .enox-overlay-body {
+    display: grid;
+    max-height: 500px;
+}
+
+.enox-overlay-body-inner {
+    overflow: hidden;
+    min-height: 0;
+    padding: 11px 13px 13px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
 }
 
 /* ── Price row ───────────────────────────────────────────────────────────── */
-.enox-product-price-row {
-  display: flex;
-  align-items: baseline;
-  gap: 5px;
-  flex-wrap: wrap;
+.enox-product-price-row-v2 {
+    display: flex;
+    align-items: baseline;
+    gap: 7px;
+    flex-wrap: wrap;
 }
 
-.enox-product-price {
-  font-size: 13px;
-  font-weight: 700;
-  color: #1a1a1a;
+.enox-price-main {
+    font-size: 14.5px;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: -0.01em;
 }
 
-.enox-product-price--sale {
-  color: #e63030;
+.enox-price-sale {
+    font-size: 14.5px;
+    font-weight: 700;
+    color: #ffffff;
+    letter-spacing: -0.01em;
 }
 
-.enox-product-price--original {
-  font-size: 11px;
-  font-weight: 400;
-  color: #999;
-  text-decoration: line-through;
+.enox-price-original {
+    font-size: 11px;
+    font-weight: 400;
+    color: rgba(255, 255, 255, 0.4);
+    text-decoration: line-through;
 }
 
-/* ── Star rating ─────────────────────────────────────────────────────────── */
-.enox-product-rating {
-  display: flex;
-  align-items: center;
-  gap: 4px;
+/* ── Attribute rows — small uppercase label, editorial spacing ───────────── */
+.enox-product-attr {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
 }
 
-.enox-product-stars {
-  font-size: 10px;
-  color: #f59e0b;
-  letter-spacing: -0.5px;
+.enox-attr-label {
+    font-size: 8.5px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #ffffff;
 }
 
-.enox-product-reviews {
-  font-size: 10px;
-  color: #999;
+/* ── Colour swatches ─────────────────────────────────────────────────────── */
+.enox-color-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
 }
 
-/* ── Color swatches ──────────────────────────────────────────────────────── */
-.enox-product-colors {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  flex-wrap: wrap;
+.enox-color-wrap {
+    position: relative;
+    display: inline-flex;
 }
 
-.enox-product-color-dot {
-  display: inline-block;
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  border: 1.5px solid rgba(0, 0, 0, 0.12);
-  flex-shrink: 0;
+.enox-color-swatch {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    border: 1.5px solid rgba(255, 255, 255, 0.25);
+    cursor: pointer;
+    padding: 0;
+    flex-shrink: 0;
+    transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
-.enox-product-color-more {
-  font-size: 10px;
-  color: #999;
+.enox-color-swatch:hover {
+    transform: scale(1.2);
+    border-color: rgba(255, 255, 255, 0.65);
+}
+
+.enox-color-swatch--active {
+    border-color: #d9b568;
+    box-shadow: 0 0 0 2px rgba(217, 181, 104, 0.35);
+    transform: scale(1.12);
+}
+
+.enox-color-tooltip {
+    position: absolute;
+    bottom: calc(100% + 6px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.92);
+    color: #fff;
+    font-size: 9.5px;
+    font-weight: 500;
+    white-space: nowrap;
+    padding: 3px 7px;
+    border-radius: 4px;
+    pointer-events: none;
+    z-index: 20;
+    letter-spacing: 0.03em;
+}
+
+.enox-color-tooltip::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 4px solid transparent;
+    border-top-color: rgba(0, 0, 0, 0.92);
 }
 
 /* ── Size chips ──────────────────────────────────────────────────────────── */
-.enox-product-sizes {
-  display: flex;
-  gap: 3px;
-  flex-wrap: wrap;
-  margin-top: 2px;
+.enox-size-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
 }
 
-.enox-product-size-chip {
-  font-size: 10px;
-  font-weight: 500;
-  color: #555;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  padding: 1px 5px;
-  line-height: 1.5;
-  white-space: nowrap;
+.enox-size-chip {
+    font-size: 10.5px;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.82);
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255);
+    border-radius: 4px;
+    padding: 3px 8px;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+    line-height: 1.4;
+    white-space: nowrap;
 }
 
-.enox-product-size-chip--more {
-  color: #999;
-  border-color: transparent;
+.enox-size-chip:hover {
+    background: rgba(255, 255, 255, 0.14);
+    border-color: rgba(255, 255, 255, 0.42);
+    color: #fff;
 }
 
-/* ── Responsive: narrower rail on mobile ─────────────────────────────────── */
-@media (max-width: 480px) {
-  .enox-product-card {
-    flex: 0 0 140px;
-  }
-}
-/* ==========================================================================
-   Carousel — single-product view with prev/next navigation
-   ========================================================================== */
-
-.enox-product-carousel {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-}
-
-/* ── Full-width card variant ─────────────────────────────────────────────── */
-.enox-product-card--full {
-  flex: none;
-  width: 100%;
-  max-width: 260px;
-  border-radius: 14px;
-}
-
-.enox-product-img-wrap--full {
-  aspect-ratio: 3 / 4;
-}
-
-.enox-product-name--full {
-  font-size: 13px;
-  font-weight: 600;
-  -webkit-line-clamp: 3;
-  margin-bottom: 0px;
-}
-
-/* ── Section label (Colours / Sizes) ─────────────────────────────────────── */
-.enox-product-section {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
-
-.enox-product-section-label {
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: #999;
-}
-
-/* ── Full color row — show all swatches, wrap ────────────────────────────── */
-.enox-product-colors--full {
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.enox-product-color-dot--full {
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  border: 1.5px solid rgba(0, 0, 0, 0.12);
-  cursor: default;
-  transition: transform 0.15s ease;
-}
-
-.enox-product-color-dot--full:hover {
-  transform: scale(1.2);
-}
-
-/* ── Full size row — show all, wrap ──────────────────────────────────────── */
-.enox-product-sizes--full {
-  flex-wrap: wrap;
-  gap: 4px;
-}
-
-/* ── Prev / Next navigation ──────────────────────────────────────────────── */
-.enox-carousel-nav {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  padding: 10px 0 4px;
-}
-
-.enox-carousel-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border: 1px solid #e0e0e0;
-  border-radius: 50%;
-  background: #fff;
-  color: #333;
-  font-size: 20px;
-  line-height: 1;
-  cursor: pointer;
-  transition: background 0.15s ease, border-color 0.15s ease, transform 0.12s ease;
-  user-select: none;
-}
-
-.enox-carousel-btn:hover {
-  background: #f5f5f5;
-  border-color: #bbb;
-  transform: scale(1.08);
-}
-
-.enox-carousel-btn:active {
-  transform: scale(0.95);
-}
-
-.enox-carousel-counter {
-  font-size: 12px;
-  font-weight: 500;
-  color: #888;
-  min-width: 36px;
-  text-align: center;
+.enox-size-chip--active {
+    background: #fff;
+    border-color: #fff;
+    color: #111;
+    font-weight: 600;
 }
 
 /* ==========================================================================
-   Typing indicator — shown while product response is buffering
+   Bottom strip — dots only. No arrows, no extra padding/border here; the
+   image arrows are the only nav control anywhere else in the card.
    ========================================================================== */
+.enox-carousel-dots-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 7px 0 0;
+}
 
+.enox-carousel-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #ddd;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.2s;
+}
+
+.enox-carousel-dot--active {
+    background: #1a1a2e;
+    transform: scale(1.35);
+}
+
+/* ==========================================================================
+   Typing indicator
+   ========================================================================== */
 .enox-typing-indicator {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 2px 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 0;
 }
 
 .enox-typing-indicator span {
-  display: inline-block;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: currentColor;
-  opacity: 0.4;
-  animation: enox-bounce 1.2s ease-in-out infinite;
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+    opacity: 0.4;
+    animation: enox-bounce 1.2s ease-in-out infinite;
 }
 
-.enox-typing-indicator span:nth-child(1) { animation-delay: 0s; }
-.enox-typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
-.enox-typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+.enox-typing-indicator span:nth-child(1) {
+    animation-delay: 0s;
+}
+
+.enox-typing-indicator span:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.enox-typing-indicator span:nth-child(3) {
+    animation-delay: 0.4s;
+}
 
 @keyframes enox-bounce {
-  0%, 80%, 100% { transform: translateY(0);   opacity: 0.4; }
-  40%            { transform: translateY(-5px); opacity: 1;   }
+    0%, 80%, 100% {
+        transform: translateY(0);
+        opacity: 0.4;
+    }
+    40% {
+        transform: translateY(-5px);
+        opacity: 1;
+    }
 }
