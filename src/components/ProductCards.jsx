@@ -56,6 +56,7 @@ export default function ProductCards({ products }) {
 
 function ProductCard({ product }) {
   const {
+    product_id,
     product_name,
     product_url,
     product_image,
@@ -65,8 +66,6 @@ function ProductCard({ product }) {
     has_discount,
     discount_percent,
     in_stock,
-    rating,
-    total_reviews,
     colors = [],
     sizes = [],
   } = product
@@ -90,7 +89,7 @@ function ProductCard({ product }) {
         {product_image ? (
           <img
             className="enox-product-img"
-            src={"https://images.enorsia.com/" + product_image + "/pgd"}
+            src={"https://images.enorsia.com/" + product_image + "/pdrelimg"}
             alt={product_name}
             loading="lazy"
           />
@@ -110,7 +109,8 @@ function ProductCard({ product }) {
       {/* Info */}
       <div className="enox-product-info enox-product-info--full">
         <p className="enox-product-name enox-product-name--full">{product_name}</p>
-
+        {/* Product id show as Product Code */}
+        <div className="enox-product-code">Product Code: <b>{product_id}</b></div>
         {/* Price */}
         <div className="enox-product-price-row">
           {has_discount && discount_price != null ? (
@@ -128,18 +128,6 @@ function ProductCard({ product }) {
             </span>
           )}
         </div>
-
-        {/* Rating */}
-        {rating != null && (
-          <div className="enox-product-rating">
-            <span className="enox-product-stars">
-              {'★'.repeat(Math.round(rating))}{'☆'.repeat(5 - Math.round(rating))}
-            </span>
-            {total_reviews != null && (
-              <span className="enox-product-reviews">({total_reviews})</span>
-            )}
-          </div>
-        )}
 
         {/* Color swatches */}
         {colors.length > 0 && (

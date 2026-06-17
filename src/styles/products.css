@@ -131,12 +131,15 @@
   margin: 0;
   font-size: 12px;
   font-weight: 500;
-  line-height: 1.35;
   color: #1a1a1a;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+.enox-product-code {
+  font-size: 11px;
+  color: #1a1a2e;
 }
 
 /* ── Price row ───────────────────────────────────────────────────────────── */
@@ -242,7 +245,6 @@
   display: flex;
   flex-direction: column;
   gap: 0;
-  margin-top: 10px;
 }
 
 /* ── Full-width card variant ─────────────────────────────────────────────── */
@@ -257,15 +259,11 @@
   aspect-ratio: 3 / 4;
 }
 
-.enox-product-info--full {
-  padding: 12px 14px 14px;
-  gap: 8px;
-}
-
 .enox-product-name--full {
   font-size: 13px;
   font-weight: 600;
   -webkit-line-clamp: 3;
+  margin-bottom: 0px;
 }
 
 /* ── Section label (Colours / Sizes) ─────────────────────────────────────── */

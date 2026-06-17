@@ -2,167 +2,118 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import ProductCards from './ProductCards'
 
-export default function Message({ role, content, products, streaming }) {
-  const isUser = role === 'user'
+export default function Message({role, content, products, streaming}) {
+    const isUser = role === 'user'
 
-  console.log("[Message] Component rendered", { role, content: content?.substring(0, 100), products: products?.length, streaming })
-
-  if (isUser) {
-    return (
-      <div className="enox-msg enox-msg--user">
-        <div className="enox-msg-bubble">
-          <span>{content}</span>
-        </div>
-      </div>
-    )
-  }
-
-  // Detect if this looks like a product JSON envelope (starts with {")
-  const looksLikeProductJSON = content && content.trimStart().startsWith('{"')
-  console.log("[Message] looksLikeProductJSON:", looksLikeProductJSON)
-
-  // While streaming AND it looks like product JSON, show typing indicator
-  // — wait for the full JSON to arrive before rendering anything
-  if (streaming && looksLikeProductJSON) {
-    console.log("[Message] Showing typing indicator (streaming product JSON)")
-    return (
-      <div className="enox-msg enox-msg--bot">
-        <div className="enox-msg-avatar" aria-hidden="true">✦</div>
-        <div className="enox-msg-bubble">
-          <span className="enox-typing-indicator">
-            <span /><span /><span />
-          </span>
-        </div>
-      </div>
-    )
-  }
-
-  // Also show typing indicator for normal streaming with no content yet
-  if (streaming && !content) {
-    console.log("[Message] Showing typing indicator (streaming no content)")
-    return (
-      <div className="enox-msg enox-msg--bot">
-        <div className="enox-msg-avatar" aria-hidden="true">✦</div>
-        <div className="enox-msg-bubble">
-          <span className="enox-typing-indicator">
-            <span /><span /><span />
-          </span>
-        </div>
-      </div>
-    )
-  }
-
-  // Stream is done (or it's normal text) — now check for product envelope
-  let displayText = content
-  let matchedProducts = null
-  let isProductResponse = false
-
-  console.log("[Message] Checking for product envelope...")
-  if (products && products.length > 0) {
-    console.log("[Message] Products available:", products.map(p => p.product_name))
-    const envelope = tryParseProductEnvelope(content)
-    console.log("[Message] Parsed envelope:", envelope)
-    if (envelope) {
-      isProductResponse = true
-      console.log("[Message] Envelope products titles:", envelope.products)
-      matchedProducts = matchProductsByTitle(envelope.products, products)
-      console.log("[Message] Matched products result:", matchedProducts?.map(p => p.product_name))
-      displayText = null
-    } else {
-      console.log("[Message] No valid envelope found")
+    if (isUser) {
+        return (
+            <div className="enox-msg enox-msg--user">
+                <div className="enox-msg-bubble">
+                    <span>{content}</span>
+                </div>
+            </div>
+        )
     }
-  } else {
-    console.log("[Message] No products prop or empty products array")
-  }
 
-  console.log("[Message] Final state:", {
-    isProductResponse,
-    matchedProductsCount: matchedProducts?.length,
-    displayText: displayText?.substring(0, 100)
-  })
+    // If streaming, show typing indicator (don't try to parse JSON yet)
+    if (streaming) {
+        console.log("[Message] Streaming - showing typing indicator")
+        return (
+            <div className="enox-msg enox-msg--bot">
+                <div className="enox-msg-avatar" aria-hidden="true">✦</div>
+                <div className="enox-msg-bubble">
+                    <span className="enox-typing-indicator">
+                        <span/><span/><span/>
+                    </span>
+                </div>
+            </div>
+        )
+    }
 
-  return (
-    <div className="enox-msg enox-msg--bot">
-      <div className="enox-msg-avatar" aria-hidden="true">✦</div>
-      <div className="enox-msg-bubble">
-        {isProductResponse ? (
-          matchedProducts && matchedProducts.length > 0 ? (
-            <ProductCards products={matchedProducts} />
-          ) : (
-            <span>Sorry, I couldn't find those products right now.</span>
-          )
-        ) : (
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>
-            {displayText || '▋'}
-          </ReactMarkdown>
-        )}
-      </div>
-    </div>
-  )
+    // Not streaming anymore - now we can safely process the content
+    console.log("[Message] Processing final content")
+
+    let displayText = content
+    let matchedProducts = null
+    let isProductResponse = false
+
+    // FIRST: Check if products prop is available (from SSE event)
+    if (products && Array.isArray(products) && products.length > 0) {
+        console.log("[Message] Using products from prop:", products.length)
+        // Validate product data
+        const validProducts = products.filter(p => p && typeof p === 'object' && p.product_name)
+        if (validProducts.length > 0) {
+            matchedProducts = validProducts
+            isProductResponse = true
+            displayText = null
+        }
+    }
+
+    // SECOND: If no products prop, try to parse content for product_data
+    if (!isProductResponse && content) {
+        const parsedContent = tryParseProductEnvelope(content)
+        if (parsedContent) {
+            // Check for product_data
+            if (parsedContent.product_data && Array.isArray(parsedContent.product_data) && parsedContent.product_data.length > 0) {
+                matchedProducts = parsedContent.product_data
+                isProductResponse = true
+                displayText = null
+                console.log("[Message] Using product_data from content:", matchedProducts.length)
+            }
+            // Check for products array (titles only)
+            else if (parsedContent.products && Array.isArray(parsedContent.products) && parsedContent.products.length > 0) {
+                // Show as comma-separated list since we don't have full data
+                displayText = `I found these products: ${parsedContent.products.join(', ')}`
+                console.log("[Message] Showing product titles as text")
+            }
+        }
+    }
+
+    // Render the message
+    return (
+        <div className="enox-msg enox-msg--bot">
+            <div className="enox-msg-avatar" aria-hidden="true">✦</div>
+            <div className="enox-msg-bubble">
+                {isProductResponse ? (
+                    matchedProducts && matchedProducts.length > 0 ? (
+                        <ProductCards products={matchedProducts}/>
+                    ) : (
+                        <span>Sorry, I couldn't find those products right now.</span>
+                    )
+                ) : (
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                        {displayText || '▋'}
+                    </ReactMarkdown>
+                )}
+            </div>
+        </div>
+    )
 }
 
 function tryParseProductEnvelope(text) {
-  console.log("[tryParseProductEnvelope] Input text:", text?.substring(0, 200))
-  if (!text) {
-    console.log("[tryParseProductEnvelope] No text provided")
+    if (!text) {
+        return null
+    }
+
+    // Remove markdown code blocks if present
+    const stripped = text
+        .replace(/^```(?:json)?\s*/i, '')
+        .replace(/\s*```$/, '')
+        .trim()
+
+    try {
+        const parsed = JSON.parse(stripped)
+        if (parsed && typeof parsed === 'object') {
+            const hasProducts = Array.isArray(parsed.products) && parsed.products.length > 0
+            const hasProductData = Array.isArray(parsed.product_data) && parsed.product_data.length > 0
+
+            if (hasProducts || hasProductData) {
+                return parsed
+            }
+        }
+    } catch (error) {
+        // Not valid JSON
+        console.log("[tryParseProductEnvelope] Not valid JSON")
+    }
     return null
-  }
-
-  const stripped = text
-    .replace(/^```(?:json)?\s*/i, '')
-    .replace(/\s*```$/, '')
-    .trim()
-
-  console.log("[tryParseProductEnvelope] Stripped text:", stripped.substring(0, 200))
-
-  try {
-    const parsed = JSON.parse(stripped)
-    console.log("[tryParseProductEnvelope] Parsed JSON:", parsed)
-    if (
-      parsed &&
-      typeof parsed === 'object' &&
-      Array.isArray(parsed.products) &&
-      parsed.products.length > 0
-    ) {
-      console.log("[tryParseProductEnvelope] Valid envelope found, products count:", parsed.products.length)
-      return parsed
-    } else {
-      console.log("[tryParseProductEnvelope] Invalid structure - missing products array or empty")
-    }
-  } catch (error) {
-    console.log("[tryParseProductEnvelope] Parse error:", error.message)
-  }
-  return null
-}
-
-function matchProductsByTitle(titles, products) {
-  console.log("[matchProductsByTitle] Looking for titles:", titles)
-  console.log("[matchProductsByTitle] In products:", products.map(p => ({ id: p.product_id, name: p.product_name })))
-
-  const result = titles.reduce((acc, title) => {
-    const normalised = title.toLowerCase().trim()
-    console.log(`[matchProductsByTitle] Matching "${title}" -> normalized: "${normalised}"`)
-
-    const match = products.find(
-      (p) =>
-        p.product_name.toLowerCase().includes(normalised) ||
-        normalised.includes(p.product_name.toLowerCase())
-    )
-
-    if (match) {
-      console.log(`[matchProductsByTitle] Found match: "${match.product_name}" (ID: ${match.product_id})`)
-      if (!acc.find((a) => a.product_id === match.product_id)) {
-        console.log(`[matchProductsByTitle] Adding to results`)
-        acc.push(match)
-      } else {
-        console.log(`[matchProductsByTitle] Duplicate, skipping`)
-      }
-    } else {
-      console.log(`[matchProductsByTitle] No match found for "${title}"`)
-    }
-    return acc
-  }, [])
-
-  console.log("[matchProductsByTitle] Final result count:", result.length)
-  return result
 }
