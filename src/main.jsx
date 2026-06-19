@@ -2,8 +2,6 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import App from './App.jsx'
 
-// Mount as a Web Component so it can be embedded anywhere
-// without polluting the host page's styles
 class EnoXChatWidget extends HTMLElement {
   constructor() {
     super()

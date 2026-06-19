@@ -77,9 +77,27 @@ export function streamMessage(message, sessionId, onToken, onProductData, onDone
               onToken(parsed.token)
             }
 
-            // Product data event — only emitted when search_products fires
+            // Product data event — parse the stringified JSON
             if (parsed.product_data !== undefined) {
-              onProductData(parsed.product_data)
+              try {
+                // If product_data is a string, parse it
+                let productData = parsed.product_data
+                if (typeof productData === 'string') {
+                  productData = JSON.parse(productData)
+                }
+
+                // Extract the product_data array from the parsed object
+                if (productData && productData.product_data && Array.isArray(productData.product_data)) {
+                  onProductData(productData.product_data)
+                } else if (Array.isArray(productData)) {
+                  // If it's already an array, use it directly
+                  onProductData(productData)
+                } else {
+                  console.warn('Unexpected product_data format:', productData)
+                }
+              } catch (parseError) {
+                console.error('Failed to parse product_data:', parseError)
+              }
             }
           } catch {
             // ignore malformed lines

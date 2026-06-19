@@ -1,191 +1,238 @@
-import { useState } from 'react'
+import {useState, useRef} from 'react'
 
-/**
- * ProductCards.jsx
- *
- * Renders a single-product carousel with prev/next navigation.
- * Shows full product image, color swatches, size chips, price, rating.
- *
- * Props:
- *   products — array of full product objects from search_products tool
- */
-export default function ProductCards({ products }) {
-  const [index, setIndex] = useState(0)
+export default function ProductCards({products}) {
+    const [index, setIndex] = useState(0)
+    const touchStartX = useRef(null)
 
-  if (!products || products.length === 0) return null
+    if (!products || products.length === 0) return null
 
-  const total = products.length
-  const product = products[index]
+    const total = products.length
+    const product = products[index]
 
-  function prev() {
-    setIndex((i) => (i - 1 + total) % total)
-  }
+    function prev(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        setIndex((i) => (i - 1 + total) % total)
+    }
 
-  function next() {
-    setIndex((i) => (i + 1) % total)
-  }
+    function next(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        setIndex((i) => (i + 1) % total)
+    }
 
-  return (
-    <div className="enox-product-carousel">
-      <ProductCard product={product} />
+    function onTouchStart(e) {
+        touchStartX.current = e.touches[0].clientX
+    }
 
-      {total > 1 && (
-        <div className="enox-carousel-nav">
-          <button
-            className="enox-carousel-btn"
-            onClick={prev}
-            aria-label="Previous product"
-          >
-            ‹
-          </button>
-          <span className="enox-carousel-counter">
-            {index + 1} / {total}
-          </span>
-          <button
-            className="enox-carousel-btn"
-            onClick={next}
-            aria-label="Next product"
-          >
-            ›
-          </button>
+    function onTouchEnd(e) {
+        if (touchStartX.current === null) return
+        const delta = touchStartX.current - e.changedTouches[0].clientX
+        if (Math.abs(delta) > 40) delta > 0 ? next(e) : prev(e)
+        touchStartX.current = null
+    }
+
+    return (
+        <div
+            className="enox-product-carousel"
+            onTouchStart={onTouchStart}
+            onTouchEnd={onTouchEnd}
+        >
+            {/* key forces a remount on product change, so hover/reveal/selection
+          state from the previous card never leaks into the next one */}
+            <ProductCard
+                key={product.product_id ?? index}
+                product={product}
+                onPrev={total > 1 ? prev : null}
+                onNext={total > 1 ? next : null}
+            />
+
+            {/* Bottom strip — dots only. No arrows, no extra padding/chrome. */}
+            {total > 1 && (
+                <div className="enox-carousel-dots-bar">
+                    {products.map((_, i) => (
+                        <button
+                            key={i}
+                            className={`enox-carousel-dot${i === index ? ' enox-carousel-dot--active' : ''}`}
+                            onClick={() => setIndex(i)}
+                            aria-label={`Product ${i + 1}`}
+                        />
+                    ))}
+                </div>
+            )}
         </div>
-      )}
-    </div>
-  )
+    )
 }
 
-function ProductCard({ product }) {
-  const {
-    product_name,
-    product_url,
-    product_image,
-    price,
-    currency = 'GBP',
-    discount_price,
-    has_discount,
-    discount_percent,
-    in_stock,
-    rating,
-    total_reviews,
-    colors = [],
-    sizes = [],
-  } = product
+function ProductCard({product, onPrev, onNext}) {
+    const [selectedColor, setSelectedColor] = useState(null)
+    const [selectedSize, setSelectedSize] = useState(null)
+    const [hoveredColor, setHoveredColor] = useState(null)
+    const [revealed, setRevealed] = useState(false)
 
-  const symbol =
-    currency === 'GBP' ? '£' :
-    currency === 'USD' ? '$' :
-    currency === 'EUR' ? '€' :
-    currency
+    const {
+        product_name,
+        product_url,
+        product_image,
+        price,
+        currency = 'GBP',
+        discount_price,
+        has_discount,
+        discount_percent,
+        in_stock,
+        colors = [],
+        sizes = [],
+    } = product
 
-  return (
-    <a
-      className="enox-product-card enox-product-card--full"
-      href={product_url}
-      target="_blank"
-      rel="noopener noreferrer"
-      aria-label={product_name}
-    >
-      {/* Image */}
-      <div className="enox-product-img-wrap enox-product-img-wrap--full">
-        {product_image ? (
-          <img
-            className="enox-product-img"
-            src={"https://images.enorsia.com/" + product_image + "/pgd"}
-            alt={product_name}
-            loading="lazy"
-          />
-        ) : (
-          <div className="enox-product-img-placeholder">✦</div>
-        )}
+    const symbol =
+        currency === 'GBP' ? '£' :
+            currency === 'USD' ? '$' :
+                currency === 'EUR' ? '€' : currency
 
-        {has_discount && discount_percent && (
-          <span className="enox-product-badge">−{Math.round(discount_percent)}%</span>
-        )}
+    // Hover doesn't exist on touch devices — first tap reveals the slide-up
+    // panel instead of navigating away; a second tap (or tapping the title)
+    // then follows the link, same as a normal hover-then-click flow.
+    function handleCardClick(e) {
+        const isTouch = typeof window !== 'undefined' && window.matchMedia('(hover: none)').matches
+        if (isTouch && !revealed) {
+            e.preventDefault()
+            setRevealed(true)
+        }
+    }
 
-        {!in_stock && (
-          <div className="enox-product-oos">Out of stock</div>
-        )}
-      </div>
+    return (
+        <a
+            className={`enox-product-card-v2${revealed ? ' enox-product-card-v2--revealed' : ''}`}
+            href={product_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={product_name}
+            onClick={handleCardClick}
+        >
+            <div className="enox-product-img-block">
+                {product_image ? (
+                    <div className="image_parent_fixed_ratio">
+                        <img
+                            className="enox-product-img-v2"
+                            src={"https://images.enorsia.com/" + product_image + "/pdrelimg"}
+                            alt={product_name}
+                            loading="lazy"
+                        />
+                    </div>
+                ) : (
+                    <div className="enox-product-img-placeholder-v2">✦</div>
+                )}
 
-      {/* Info */}
-      <div className="enox-product-info enox-product-info--full">
-        <p className="enox-product-name enox-product-name--full">{product_name}</p>
+                {has_discount && discount_percent && (
+                    <span className="enox-product-badge-v2">−{Math.round(discount_percent)}%</span>
+                )}
 
-        {/* Price */}
-        <div className="enox-product-price-row">
-          {has_discount && discount_price != null ? (
-            <>
-              <span className="enox-product-price enox-product-price--sale">
-                {symbol}{Number(discount_price).toFixed(2)}
-              </span>
-              <span className="enox-product-price enox-product-price--original">
-                {symbol}{Number(price).toFixed(2)}
-              </span>
-            </>
-          ) : (
-            <span className="enox-product-price">
-              {symbol}{Number(price).toFixed(2)}
-            </span>
-          )}
-        </div>
+                {!in_stock && (
+                    <div className="enox-product-oos-v2">Out of stock</div>
+                )}
 
-        {/* Rating */}
-        {rating != null && (
-          <div className="enox-product-rating">
-            <span className="enox-product-stars">
-              {'★'.repeat(Math.round(rating))}{'☆'.repeat(5 - Math.round(rating))}
-            </span>
-            {total_reviews != null && (
-              <span className="enox-product-reviews">({total_reviews})</span>
+                {/* The only navigation control on the image — centred, glass-style */}
+
+                {/* Title always visible on the image. Price/colour/size slide up
+            on hover (or on first tap on touch devices). */}
+                <div className="enox-product-overlay">
+                    <div className="enox-overlay-title-bar">
+                        <span className="enox-overlay-name">{product_name}</span>
+                    </div>
+
+                    <div className="enox-overlay-body">
+                        <div className="enox-overlay-body-inner">
+                            <div className="enox-product-price-row-v2">
+                                {has_discount && discount_price != null ? (
+                                    <>
+                                        <span className="enox-price-sale">{symbol}{Number(discount_price).toFixed(2)}</span>
+                                        <span className="enox-price-original">{symbol}{Number(price).toFixed(2)}</span>
+                                    </>
+                                ) : (
+                                    <span className="enox-price-main">{symbol}{Number(price).toFixed(2)}</span>
+                                )}
+                            </div>
+
+                            {colors.length > 0 && (
+                                <div className="enox-product-attr">
+                                    <span className="enox-attr-label">Colour</span>
+                                    <div className="enox-color-row">
+                                        {colors.map((c) => (
+                                            <span key={c} className="enox-color-wrap">
+                        <button
+                            className={`enox-color-swatch${selectedColor === c ? ' enox-color-swatch--active' : ''}`}
+                            style={{background: colorToHex(c)}}
+                            onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setSelectedColor(selectedColor === c ? null : c)
+                            }}
+                            onMouseEnter={() => setHoveredColor(c)}
+                            onMouseLeave={() => setHoveredColor(null)}
+                            aria-label={c}
+                            aria-pressed={selectedColor === c}
+                        />
+                                                {hoveredColor === c && (
+                                                    <span className="enox-color-tooltip">{c}</span>
+                                                )}
+                      </span>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {sizes.length > 0 && (
+                                <div className="enox-product-attr">
+                                    <span className="enox-attr-label">Size</span>
+                                    <div className="enox-size-row">
+                                        {sizes.map((s) => (
+                                            <button
+                                                key={s}
+                                                className={`enox-size-chip${selectedSize === s ? ' enox-size-chip--active' : ''}`}
+                                                onClick={(e) => {
+                                                    e.preventDefault();
+                                                    e.stopPropagation();
+                                                    setSelectedSize(selectedSize === s ? null : s)
+                                                }}
+                                                aria-pressed={selectedSize === s}
+                                            >
+                                                {s}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {onPrev && (
+                <button className="enox-img-arrow enox-img-arrow--left" onClick={onPrev} aria-label="Previous product">
+                    ‹
+                </button>
             )}
-          </div>
-        )}
-
-        {/* Color swatches */}
-        {colors.length > 0 && (
-          <div className="enox-product-section">
-            <span className="enox-product-section-label">Colours</span>
-            <div className="enox-product-colors enox-product-colors--full" aria-label="Available colours">
-              {colors.map((c) => (
-                <span
-                  key={c}
-                  className="enox-product-color-dot enox-product-color-dot--full"
-                  title={c}
-                  style={{ background: colorToHex(c) }}
-                />
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Size chips */}
-        {sizes.length > 0 && (
-          <div className="enox-product-section">
-            <span className="enox-product-section-label">Sizes</span>
-            <div className="enox-product-sizes enox-product-sizes--full" aria-label="Available sizes">
-              {sizes.map((s) => (
-                <span key={s} className="enox-product-size-chip">{s}</span>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-    </a>
-  )
+            {onNext && (
+                <button className="enox-img-arrow enox-img-arrow--right" onClick={onNext} aria-label="Next product">
+                    ›
+                </button>
+            )}
+        </a>
+    )
 }
 
 const COLOR_MAP = {
-  black: '#111111', white: '#f5f5f5', red: '#e63030', pink: '#f472b6',
-  rose: '#f43f5e', fuchsia: '#d946ef', purple: '#9333ea', violet: '#7c3aed',
-  blue: '#2563eb', navy: '#1e3a5f', teal: '#0d9488', green: '#16a34a',
-  olive: '#657234', yellow: '#eab308', orange: '#f97316', coral: '#ff6b6b',
-  brown: '#92400e', camel: '#c19a6b', cream: '#fffdd0', beige: '#f5f0e8',
-  ivory: '#fffff0', grey: '#9ca3af', gray: '#9ca3af', silver: '#c0c0c0',
-  gold: '#d4af37', khaki: '#c3b091', nude: '#e8cdb2', lilac: '#c8a2c8',
-  mint: '#98ead0', denim: '#1560bd', leopard: '#c68642', animal: '#c68642',
+    black: '#111111', white: '#f5f5f5', red: '#e63030', pink: '#f472b6',
+    rose: '#f43f5e', fuchsia: '#d946ef', purple: '#9333ea', violet: '#7c3aed',
+    blue: '#2563eb', navy: '#1e3a5f', teal: '#0d9488', green: '#16a34a',
+    olive: '#657234', yellow: '#eab308', orange: '#f97316', coral: '#ff6b6b',
+    brown: '#92400e', camel: '#c19a6b', cream: '#fffdd0', beige: '#f5f0e8',
+    ivory: '#fffff0', grey: '#9ca3af', gray: '#9ca3af', silver: '#c0c0c0',
+    gold: '#d4af37', khaki: '#c3b091', nude: '#e8cdb2', lilac: '#c8a2c8',
+    mint: '#98ead0', denim: '#1560bd', leopard: '#c68642', animal: '#c68642',
 }
 
 function colorToHex(name) {
-  const key = name.toLowerCase().trim()
-  return COLOR_MAP[key] || '#d1d5db'
+    const key = name.toLowerCase().trim()
+    return COLOR_MAP[key] || '#d1d5db'
 }

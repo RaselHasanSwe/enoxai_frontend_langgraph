@@ -51,14 +51,31 @@ export function useChat() {
       setTotalPages(res.pagination.total_pages)
       setHistoryPage(res.pagination.current_page)
 
-      const mapped = [...res.data].reverse().map((m) => ({
-        id: makeId(),
-        role: m.role === 'ai' ? 'assistant' : 'user',
-        content: m.message,
-        ts: m.timestamp,
-        products: undefined,
-        streaming: false,
-      }))
+      const mapped = [...res.data].reverse().map((m) => {
+        let products = undefined
+        let content = m.message
+
+        // Try to extract product_data from history
+        try {
+          const parsed = JSON.parse(m.message)
+          if (parsed && typeof parsed === 'object') {
+            if (Array.isArray(parsed.product_data) && parsed.product_data.length > 0) {
+              products = parsed.product_data
+            }
+          }
+        } catch {
+          // Not JSON, use as is
+        }
+
+        return {
+          id: makeId(),
+          role: m.role === 'ai' ? 'assistant' : 'user',
+          content: content,
+          ts: m.timestamp,
+          products: products,
+          streaming: false,
+        }
+      })
 
       if (replace) {
         setMessages(mapped)
@@ -91,37 +108,62 @@ export function useChat() {
         text,
         user.session_id,
 
-        // onToken — stream tokens into content as they arrive
-        // Message.jsx will suppress rendering if content starts with {"
+        // onToken — accumulate content
         (token) => {
           setMessages((prev) =>
-            prev.map((m) =>
-              m.id === botMsgId ? { ...m, content: m.content + token } : m
-            )
+            prev.map((m) => {
+              if (m.id === botMsgId) {
+                return { ...m, content: m.content + token }
+              }
+              return m
+            })
           )
         },
 
-        // onProductData — attach product array to the message
+        // onProductData — set products from SSE event (already parsed by chat.js)
         (products) => {
+          console.log("[useChat] Received product_data from SSE:", products.length)
+          console.log("[useChat] First product:", products[0])
           setMessages((prev) =>
-            prev.map((m) =>
-              m.id === botMsgId ? { ...m, products } : m
-            )
+            prev.map((m) => {
+              if (m.id === botMsgId) {
+                return { ...m, products }
+              }
+              return m
+            })
           )
         },
 
-        // onDone — mark streaming finished so Message renders final content
+        // onDone — mark streaming complete
         () => {
+          console.log("[useChat] Stream complete")
           setMessages((prev) =>
-            prev.map((m) =>
-              m.id === botMsgId ? { ...m, streaming: false } : m
-            )
+            prev.map((m) => {
+              if (m.id === botMsgId) {
+                // Final check: if we have products from SSE, keep them
+                // Otherwise try to extract from content
+                let finalProducts = m.products
+                if (!finalProducts) {
+                  try {
+                    const parsed = JSON.parse(m.content)
+                    if (parsed && parsed.product_data) {
+                      finalProducts = parsed.product_data
+                    }
+                  } catch {
+                    // Not JSON
+                  }
+                }
+                return { ...m, streaming: false, products: finalProducts }
+              }
+              return m
+            })
           )
           setIsStreaming(false)
         },
 
         // onError
         (err) => {
+          console.error("[useChat] Stream error:", err)
           setMessages((prev) =>
             prev.map((m) =>
               m.id === botMsgId
