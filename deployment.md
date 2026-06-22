@@ -1,6 +1,6 @@
 # EnoX AI Frontend Deployment Guide
 
-## 1. Update Backend API URL
+## 1. Configure Environment
 
 Go to your local frontend project directory:
 
@@ -8,16 +8,22 @@ Go to your local frontend project directory:
 cd frontend
 ```
 
-Edit the API configuration file:
+The project uses Vite environment files.
 
-```text
-src/api/chat.js
+### Local Development
+
+Create or update `.env.local`:
+
+```env
+VITE_API_BASE_URL=http://127.0.0.1:9000/api/v1
 ```
 
-Update the API base URL:
+### Production Environment
 
-```javascript
-const BASE_URL = "https://enoxaibe.enoxsuite.com/api/v1";
+Create or update `.env.production`:
+
+```env
+VITE_API_BASE_URL=https://enoxaibe.enoxsuite.com/api/v1
 ```
 
 ---
@@ -32,13 +38,16 @@ npm install
 
 ## 3. Build the Frontend
 
+### Production Build
+
 ```bash
-npm run build
+npm run build:production
 ```
 
-This will generate the production build inside the `dist` directory.
+This will generate the production-ready build inside the `dist` directory.
 
 ---
+
 
 ## 4. Upload Build to Server
 
@@ -86,7 +95,7 @@ server {
     }
 }
 ```
-
+NOTE: If project in maintenance mode then nginx root will be: root /srv/enoxai_frontend_langgraph/maintenance;
 ---
 
 ## 7. Enable the Nginx Site

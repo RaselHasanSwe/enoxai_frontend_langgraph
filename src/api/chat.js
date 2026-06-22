@@ -1,7 +1,7 @@
 // All API calls are centralised here.
 // Change BASE_URL to your production FastAPI URL before deploying.
 
-const BASE_URL = 'http://127.0.0.1:9000/api/v1'
+const BASE_URL = import.meta.env.VITE_API_BASE_URL
 
 // ── Create or fetch a user session ──────────────────────────────────────────
 export async function createUser(name, email) {
