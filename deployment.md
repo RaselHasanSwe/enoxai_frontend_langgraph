@@ -53,7 +53,7 @@ scp -r ./dist ukenorsia@172.16.61.171:/srv/enoxai_frontend_langgraph
 ## 5. Login to the Server
 
 ```bash
-ssh -i "%USERPROFILE%\.ssh\enoxsuite_deploy_v1" ukenorsia@172.16.61.171
+ssh -i "%USERPROFILE%\.ssh\enoxsuite_login" ukenorsia@172.16.61.171
 ```
 
 ---
