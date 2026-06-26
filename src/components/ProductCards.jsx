@@ -116,7 +116,8 @@ function ProductCard({product, onPrev, onNext}) {
                             className="enox-product-img-v2"
                             src={"https://images.enorsia.com/" + product_image + "/pdrelimg"}
                             alt={product_name}
-                            loading="lazy"
+                            loading="eager"
+                            decoding="async"
                         />
                     </div>
                 ) : (
