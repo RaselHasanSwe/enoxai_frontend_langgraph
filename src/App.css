@@ -307,6 +307,8 @@
   background: var(--enox-bot-bg);
   color: var(--enox-bot-text);
   border-bottom-left-radius: 4px;
+    max-width: 420px;
+    width: 85%;
 }
 
 /* Markdown content inside bot bubbles */
