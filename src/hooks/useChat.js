@@ -16,6 +16,23 @@ function saveUser(user) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(user))
 }
 
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+
+      reader.onload = () => {
+          // Remove the data:image/...;base64, prefix
+          const base64 = reader.result.split(",")[1]
+          resolve(base64)
+      }
+
+      reader.onerror = reject
+
+      reader.readAsDataURL(file)
+  })
+}
+
+
 export function useChat() {
   const [user, setUser] = useState(loadUser)
   const [messages, setMessages] = useState([])
@@ -24,6 +41,7 @@ export function useChat() {
   const [historyPage, setHistoryPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [loadingHistory, setLoadingHistory] = useState(false)
+  const [selectedImage, setSelectedImage] = useState(null)
 
   const streamController = useRef(null)
   const nextId = useRef(0)
@@ -93,8 +111,14 @@ export function useChat() {
   }
 
   const sendMessage = useCallback(
-    async (text) => {
-      if (!text.trim() || isStreaming || !user) return
+    async (text, selectedImage) => {
+      if ((!text.trim() && !selectedImage) || isStreaming || !user) return
+
+      console.log("selectedImage 1:", selectedImage);
+      let image_base64 = null
+       if (selectedImage) {
+            image_base64 = await fileToBase64(selectedImage)
+        }
 
       const userMsg = { id: makeId(), role: 'user', content: text, ts: null, streaming: false }
       const botMsgId = makeId()
@@ -107,7 +131,7 @@ export function useChat() {
       streamController.current = streamMessage(
         text,
         user.session_id,
-
+        image_base64,
         // onToken — accumulate content
         (token) => {
           setMessages((prev) =>
@@ -206,5 +230,7 @@ export function useChat() {
     cancelStream,
     loadOlderMessages,
     clearUser,
+    selectedImage,
+    setSelectedImage,
   }
 }

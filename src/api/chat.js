@@ -31,13 +31,15 @@ export async function fetchHistory(userId, page = 1) {
 //   onError(message)        — something went wrong
 //
 // Returns an AbortController so the caller can cancel.
-export function streamMessage(message, sessionId, onToken, onProductData, onDone, onError) {
+export function streamMessage(message, sessionId, image_base64, onToken, onProductData, onDone, onError) {
   const controller = new AbortController()
+
+  console.log("image_base64",image_base64)
 
   fetch(`${BASE_URL}/chat/stream`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ message, session_id: sessionId }),
+    body: JSON.stringify({ message, session_id: sessionId, image_base64 }),
     signal: controller.signal,
   })
     .then(async (res) => {

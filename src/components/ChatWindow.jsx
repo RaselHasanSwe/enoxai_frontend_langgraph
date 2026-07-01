@@ -16,6 +16,8 @@ export default function ChatWindow({
                                        cancelStream,
                                        loadOlderMessages,
                                        clearUser,
+                                       selectedImage,
+                                       setSelectedImage
                                    }) {
     const bottomRef = useRef(null)
     const listRef = useRef(null)
@@ -79,6 +81,26 @@ export default function ChatWindow({
 
             {/* Input bar */}
             <div className="enox-input-bar">
+                <input
+    type="file"
+    accept="image/*"
+    id="image-upload"
+    hidden
+    onChange={(e) => {
+        const file = e.target.files?.[0]
+        console.log(file);
+        if (file) {
+            setSelectedImage(file)
+        }
+    }}
+/>
+
+<label
+    htmlFor="image-upload"
+    className="enox-btn-image"
+>
+    📷
+</label>
         <textarea
             className="enox-input"
             placeholder="Type a message…"
@@ -99,7 +121,7 @@ export default function ChatWindow({
                 ) : (
                     <button
                         className="enox-btn-send"
-                        onClick={() => sendMessage(inputValue)}
+                        onClick={() => sendMessage(inputValue, selectedImage)}
                         disabled={!inputValue.trim()}
                         title="Send"
                     >
@@ -107,6 +129,19 @@ export default function ChatWindow({
                     </button>
                 )}
             </div>
+            {selectedImage && (
+    <div className="enox-selected-image">
+        <img
+            src={URL.createObjectURL(selectedImage)}
+            alt="Preview"
+            width={80}
+        />
+
+        <button onClick={() => setSelectedImage(null)}>
+            ✕
+        </button>
+    </div>
+)}
         </div>
     )
 }
