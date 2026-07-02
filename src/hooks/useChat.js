@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { createUser, fetchHistory, streamMessage } from '../api/chat'
+import { createUser, fetchHistory, streamMessage, BASE_URL } from '../api/chat'
 
 const STORAGE_KEY = 'enox_user'
 
@@ -72,13 +72,21 @@ export function useChat() {
       const mapped = [...res.data].reverse().map((m) => {
         let products = undefined
         let content = m.message
+        let imageUrl = undefined
 
-        // Try to extract product_data from history
+        if (m.image_path) {
+          imageUrl = `${BASE_URL}/chat/uploads/${m.image_path}`
+        }
+
+        // Try to extract product_data / display text from stored AI JSON
         try {
           const parsed = JSON.parse(m.message)
           if (parsed && typeof parsed === 'object') {
             if (Array.isArray(parsed.product_data) && parsed.product_data.length > 0) {
               products = parsed.product_data
+            }
+            if (parsed.message && typeof parsed.message === 'string') {
+              content = parsed.message
             }
           }
         } catch {
@@ -89,6 +97,7 @@ export function useChat() {
           id: makeId(),
           role: m.role === 'ai' ? 'assistant' : 'user',
           content: content,
+          imageUrl,
           ts: m.timestamp,
           products: products,
           streaming: false,

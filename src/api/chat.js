@@ -3,6 +3,8 @@
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL
 
+export { BASE_URL }
+
 // ── Create or fetch a user session ──────────────────────────────────────────
 export async function createUser(name, email) {
   const res = await fetch(`${BASE_URL}/chat/user`, {
