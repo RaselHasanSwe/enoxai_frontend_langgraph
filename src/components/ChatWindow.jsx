@@ -23,12 +23,15 @@ export default function ChatWindow({
     const listRef = useRef(null)
     const fileInputRef = useRef(null)
     const [previewUrl, setPreviewUrl] = useState(null)
+    const [previewLoading, setPreviewLoading] = useState(false)
 
     useEffect(() => {
         if (!selectedImage) {
             setPreviewUrl(null)
+            setPreviewLoading(false)
             return
         }
+        setPreviewLoading(true)
         const url = URL.createObjectURL(selectedImage)
         setPreviewUrl(url)
         return () => URL.revokeObjectURL(url)
@@ -118,10 +121,28 @@ export default function ChatWindow({
 
             {/* Input area */}
             <div className="enox-input-area">
-                {selectedImage && previewUrl && (
+                {selectedImage && (
                     <div className="enox-image-preview">
-                        <div className="enox-image-preview-thumb">
-                            <img src={previewUrl} alt="Attachment preview"/>
+                        <div
+                            className="enox-image-preview-thumb"
+                            aria-busy={previewLoading}
+                            aria-label={previewLoading ? 'Loading image preview' : 'Image preview'}
+                        >
+                            {previewUrl ? (
+                                <img
+                                    src={previewUrl}
+                                    alt="Attachment preview"
+                                    onLoad={() => setPreviewLoading(false)}
+                                    onError={() => setPreviewLoading(false)}
+                                />
+                            ) : (
+                                <div className="enox-image-preview-placeholder" aria-hidden="true"/>
+                            )}
+                            {previewLoading && (
+                                <div className="enox-image-preview-overlay" aria-hidden="true">
+                                    <div className="enox-image-preview-spinner"/>
+                                </div>
+                            )}
                             <button
                                 type="button"
                                 className="enox-image-preview-remove"
