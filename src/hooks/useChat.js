@@ -112,7 +112,7 @@ export function useChat() {
 
   const sendMessage = useCallback(
     async (text, selectedImage) => {
-      if ((!text.trim() && !selectedImage) || isStreaming || !user) return
+      if (!text.trim() || isStreaming || !user) return
 
       console.log("selectedImage 1:", selectedImage);
       let image_base64 = null
@@ -120,13 +120,26 @@ export function useChat() {
             image_base64 = await fileToBase64(selectedImage)
         }
 
-      const userMsg = { id: makeId(), role: 'user', content: text, ts: null, streaming: false }
+      let imageUrl = null
+      if (selectedImage) {
+        imageUrl = URL.createObjectURL(selectedImage)
+      }
+
+      const userMsg = {
+        id: makeId(),
+        role: 'user',
+        content: text,
+        imageUrl,
+        ts: null,
+        streaming: false,
+      }
       const botMsgId = makeId()
       const botMsg = { id: botMsgId, role: 'assistant', content: '', ts: null, products: undefined, streaming: true }
 
       setMessages((prev) => [...prev, userMsg, botMsg])
       setIsStreaming(true)
       setInputValue('')
+      setSelectedImage(null)
 
       streamController.current = streamMessage(
         text,

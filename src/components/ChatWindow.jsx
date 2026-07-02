@@ -1,4 +1,4 @@
-import {useEffect, useRef} from 'react'
+import {useEffect, useRef, useState} from 'react'
 import Message from './Message'
 
 // The main message list + input bar.
@@ -21,16 +21,51 @@ export default function ChatWindow({
                                    }) {
     const bottomRef = useRef(null)
     const listRef = useRef(null)
+    const fileInputRef = useRef(null)
+    const [previewUrl, setPreviewUrl] = useState(null)
+
+    useEffect(() => {
+        if (!selectedImage) {
+            setPreviewUrl(null)
+            return
+        }
+        const url = URL.createObjectURL(selectedImage)
+        setPreviewUrl(url)
+        return () => URL.revokeObjectURL(url)
+    }, [selectedImage])
 
     // Auto-scroll to bottom when new messages arrive
     useEffect(() => {
         bottomRef.current?.scrollIntoView({behavior: 'smooth'})
     }, [messages])
 
+    function clearSelectedImage() {
+        setSelectedImage(null)
+        if (fileInputRef.current) {
+            fileInputRef.current.value = ''
+        }
+    }
+
+    function handleImageSelect(e) {
+        const file = e.target.files?.[0]
+        if (file) {
+            setSelectedImage(file)
+        }
+    }
+
+    function canSend() {
+        return Boolean(inputValue.trim())
+    }
+
+    function handleSend() {
+        if (!canSend() || isStreaming) return
+        sendMessage(inputValue, selectedImage)
+    }
+
     function handleKey(e) {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault()
-            sendMessage(inputValue)
+            handleSend()
         }
     }
 
@@ -69,79 +104,93 @@ export default function ChatWindow({
 
                 {messages.map((m) => (
                     <Message
-                        key={m.id} role={m.role}
+                        key={m.id}
+                        role={m.role}
                         content={m.content}
-                        products={m.products}     // ← ADD THIS LINE
-                        streaming={m.streaming}   // ← ADD THIS LINE
+                        imageUrl={m.imageUrl}
+                        products={m.products}
+                        streaming={m.streaming}
                     />
                 ))}
 
                 <div ref={bottomRef}/>
             </div>
 
-            {/* Input bar */}
-            <div className="enox-input-bar">
-                <input
-    type="file"
-    accept="image/*"
-    id="image-upload"
-    hidden
-    onChange={(e) => {
-        const file = e.target.files?.[0]
-        console.log(file);
-        if (file) {
-            setSelectedImage(file)
-        }
-    }}
-/>
-
-<label
-    htmlFor="image-upload"
-    className="enox-btn-image"
->
-    📷
-</label>
-        <textarea
-            className="enox-input"
-            placeholder="Type a message…"
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            onKeyDown={handleKey}
-            rows={1}
-            disabled={isStreaming}
-        />
-                {isStreaming ? (
-                    <button
-                        className="enox-btn-stop"
-                        onClick={cancelStream}
-                        title="Stop"
-                    >
-                        ■
-                    </button>
-                ) : (
-                    <button
-                        className="enox-btn-send"
-                        onClick={() => sendMessage(inputValue, selectedImage)}
-                        disabled={!inputValue.trim()}
-                        title="Send"
-                    >
-                        ↑
-                    </button>
+            {/* Input area */}
+            <div className="enox-input-area">
+                {selectedImage && previewUrl && (
+                    <div className="enox-image-preview">
+                        <div className="enox-image-preview-thumb">
+                            <img src={previewUrl} alt="Attachment preview"/>
+                            <button
+                                type="button"
+                                className="enox-image-preview-remove"
+                                onClick={clearSelectedImage}
+                                aria-label="Remove image"
+                                title="Remove image"
+                            >
+                                ×
+                            </button>
+                        </div>
+                        <span className="enox-image-preview-name">{selectedImage.name}</span>
+                    </div>
                 )}
-            </div>
-            {selectedImage && (
-    <div className="enox-selected-image">
-        <img
-            src={URL.createObjectURL(selectedImage)}
-            alt="Preview"
-            width={80}
-        />
 
-        <button onClick={() => setSelectedImage(null)}>
-            ✕
-        </button>
-    </div>
-)}
+                <div className="enox-input-bar">
+                    <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        id="image-upload"
+                        hidden
+                        onChange={handleImageSelect}
+                    />
+
+                    <label
+                        htmlFor="image-upload"
+                        className="enox-btn-image"
+                        title="Attach image"
+                        aria-label="Attach image"
+                    >
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                            <path
+                                d="M19 5h-2V4a2 2 0 0 0-2-2H9a2 2 0 0 0-2 2v1H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2zM9 4h6v1H9V4zm10 15H5V7h14v12z"
+                                fill="currentColor"
+                            />
+                            <circle cx="12" cy="13" r="3.5" stroke="currentColor" strokeWidth="1.5" fill="none"/>
+                        </svg>
+                    </label>
+
+                    <textarea
+                        className="enox-input"
+                        placeholder={selectedImage ? 'Describe this image (required)…' : 'Type a message…'}
+                        value={inputValue}
+                        onChange={(e) => setInputValue(e.target.value)}
+                        onKeyDown={handleKey}
+                        rows={1}
+                        disabled={isStreaming}
+                    />
+
+                    {isStreaming ? (
+                        <button
+                            className="enox-btn-stop"
+                            onClick={cancelStream}
+                            title="Stop"
+                        >
+                            ■
+                        </button>
+                    ) : (
+                        <button
+                            className="enox-btn-send"
+                            onClick={handleSend}
+                            disabled={!canSend()}
+                            title="Send"
+                        >
+                            ↑
+                        </button>
+                    )}
+                </div>
+            </div>
         </div>
     )
 }

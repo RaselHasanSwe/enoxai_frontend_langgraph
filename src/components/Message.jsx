@@ -3,14 +3,21 @@ import remarkGfm from 'remark-gfm'
 import rehypeRaw from 'rehype-raw';
 import ProductCards from './ProductCards'
 
-export default function Message({role, content, products, streaming}) {
+export default function Message({role, content, imageUrl, products, streaming}) {
     const isUser = role === 'user'
 
     if (isUser) {
         return (
             <div className="enox-msg enox-msg--user">
                 <div className="enox-msg-bubble">
-                    <span>{content}</span>
+                    {imageUrl && (
+                        <img
+                            className="enox-msg-image"
+                            src={imageUrl}
+                            alt="Uploaded attachment"
+                        />
+                    )}
+                    {content?.trim() && <span>{content}</span>}
                 </div>
             </div>
         )
