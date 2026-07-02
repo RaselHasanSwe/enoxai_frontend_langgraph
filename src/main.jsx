@@ -6,15 +6,16 @@ class EnoXChatWidget extends HTMLElement {
   constructor() {
     super()
     this._root = null
+    this._mountPoint = null
   }
 
   connectedCallback() {
-    const mountPoint = document.createElement('div')
-    this.appendChild(mountPoint)
-    this._root = createRoot(mountPoint)
+    this._mountPoint = document.createElement('div')
+    this.appendChild(this._mountPoint)
+    this._root = createRoot(this._mountPoint)
     this._root.render(
       <StrictMode>
-        <App />
+        <App hostElement={this} />
       </StrictMode>
     )
   }
@@ -27,4 +28,8 @@ class EnoXChatWidget extends HTMLElement {
 // Register as a custom element
 if (!customElements.get('enox-chat')) {
   customElements.define('enox-chat', EnoXChatWidget)
+}
+
+window.openEnoxChat = () => {
+  document.querySelector('enox-chat')?.setAttribute('open', 'true')
 }

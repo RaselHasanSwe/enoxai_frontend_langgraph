@@ -1,22 +1,56 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useChat } from './hooks/useChat'
 import UserForm from './components/UserForm'
 import ChatWindow from './components/ChatWindow'
 import './App.css'
 import './styles/products.css'
 
+function readHostOpen(hostElement) {
+  return Boolean(
+    hostElement?.hasAttribute('open') && hostElement.getAttribute('open') !== 'false'
+  )
+}
+
 // ── Size modes ────────────────────────────────────────────────────────────────
 // 'normal'     → default floating box (380 × 560 px)
 // 'minimised'  → only the launcher icon is visible
 // 'fullscreen' → fills the viewport
 
-export default function App() {
-  const [isOpen, setIsOpen] = useState(false)
+export default function App({ hostElement = null }) {
+  const [isOpen, setIsOpen] = useState(() => readHostOpen(hostElement))
   const [sizeMode, setSizeMode] = useState('normal')  // 'normal' | 'fullscreen'
   const [formLoading, setFormLoading] = useState(false)
   const [formError, setFormError] = useState('')
 
   const chat = useChat()
+
+  useEffect(() => {
+    if (!hostElement) return
+
+    const syncFromHost = () => {
+      const shouldOpen = readHostOpen(hostElement)
+      setIsOpen((prev) => {
+        if (shouldOpen && !prev) {
+          setSizeMode('normal')
+        }
+        return shouldOpen
+      })
+    }
+
+    const observer = new MutationObserver(syncFromHost)
+    syncFromHost()
+    observer.observe(hostElement, { attributes: true, attributeFilter: ['open'] })
+    return () => observer.disconnect()
+  }, [hostElement])
+
+  function setOpen(next) {
+    if (next && !isOpen) setSizeMode('normal')
+    setIsOpen(next)
+    if (hostElement) {
+      if (next) hostElement.setAttribute('open', 'true')
+      else hostElement.removeAttribute('open')
+    }
+  }
 
   // ── User registration ──────────────────────────────────────────────────────
   async function handleFormSubmit(name, email) {
@@ -33,8 +67,7 @@ export default function App() {
 
   // ── Toggle open/close ──────────────────────────────────────────────────────
   function toggleOpen() {
-    setIsOpen((prev) => !prev)
-    if (!isOpen) setSizeMode('normal')   // reset to normal on re-open
+    setOpen(!isOpen)
   }
 
   // ── Determine panel CSS class ──────────────────────────────────────────────
@@ -54,11 +87,11 @@ export default function App() {
         <div className="enox-header">
           <div className="enox-header-brand">
             <span className="enox-logo">✦</span>
-            <span className="enox-brand-name">EnoX AI</span>
+            <span className="enox-brand-name">EnoX</span>
           </div>
           <div className="enox-header-actions">
             {/* Fullscreen toggle */}
-            <button
+            {/* <button
               className="enox-icon-btn"
               onClick={() =>
                 setSizeMode((m) => (m === 'fullscreen' ? 'normal' : 'fullscreen'))
@@ -66,7 +99,7 @@ export default function App() {
               title={sizeMode === 'fullscreen' ? 'Exit fullscreen' : 'Fullscreen'}
             >
               {sizeMode === 'fullscreen' ? '⊡' : '⊞'}
-            </button>
+            </button> */}
             {/* Minimise / close */}
             <button
               className="enox-icon-btn"
