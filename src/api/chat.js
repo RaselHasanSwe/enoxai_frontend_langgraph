@@ -28,7 +28,7 @@ export async function fetchHistory(userId, page = 1) {
 // ── Stream a chat response via SSE ───────────────────────────────────────────
 // Callbacks:
 //   onToken(token)          — each streamed text chunk
-//   onProductData(products) — full product array from search_products tool
+//   onProductData(products, message) — product cards + friendly LLM message
 //   onDone()                — stream finished cleanly
 //   onError(message)        — something went wrong
 //
@@ -81,21 +81,20 @@ export function streamMessage(message, sessionId, image_base64, onToken, onProdu
               onToken(parsed.token)
             }
 
-            // Product data event — parse the stringified JSON
-            if (parsed.product_data !== undefined) {
+            // Structured product turn: friendly message + optional product cards
+            if (parsed.product_message !== undefined) {
+              onProductData(parsed.product_data || [], parsed.product_message)
+            } else if (parsed.product_data !== undefined) {
               try {
-                // If product_data is a string, parse it
                 let productData = parsed.product_data
                 if (typeof productData === 'string') {
                   productData = JSON.parse(productData)
                 }
 
-                // Extract the product_data array from the parsed object
                 if (productData && productData.product_data && Array.isArray(productData.product_data)) {
-                  onProductData(productData.product_data)
+                  onProductData(productData.product_data, productData.message || '')
                 } else if (Array.isArray(productData)) {
-                  // If it's already an array, use it directly
-                  onProductData(productData)
+                  onProductData(productData, '')
                 } else {
                   console.warn('Unexpected product_data format:', productData)
                 }

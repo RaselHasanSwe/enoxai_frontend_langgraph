@@ -41,41 +41,36 @@ export default function Message({role, content, imageUrl, products, streaming}) 
     // Not streaming anymore - now we can safely process the content
     console.log("[Message] Processing final content")
 
-    let displayText = content
-    let matchedProducts = null
-    let isProductResponse = false
+    let displayText = content?.trim() || ''
+    let matchedProducts = []
+    let showProductCards = false
+    let isStructuredProductTurn = false
 
-    // FIRST: Check if products prop is available (from SSE event)
-    if (products && Array.isArray(products) && products.length > 0) {
-        console.log("[Message] Using products from prop:", products.length)
-        // Validate product data
-        const validProducts = products.filter(p => p && typeof p === 'object' && p.product_name)
-        if (validProducts.length > 0) {
-            matchedProducts = validProducts
-            isProductResponse = true
-            displayText = null
-        }
-    }
-
-    // SECOND: If no products prop, try to parse content for product_data
-    if (!isProductResponse && content) {
+    // Live stream / history: products prop was set explicitly
+    if (products !== undefined && products !== null) {
+        isStructuredProductTurn = true
+        matchedProducts = Array.isArray(products)
+            ? products.filter(p => p && typeof p === 'object' && p.product_name)
+            : []
+        showProductCards = matchedProducts.length > 0
+    } else if (content) {
+        // History fallback: parse stored JSON envelope
         const parsedContent = tryParseProductEnvelope(content)
         if (parsedContent) {
-            // Check for product_data
+            if (parsedContent.message && typeof parsedContent.message === 'string') {
+                displayText = parsedContent.message.trim()
+            }
             if (parsedContent.product_data && Array.isArray(parsedContent.product_data) && parsedContent.product_data.length > 0) {
                 matchedProducts = parsedContent.product_data
-                isProductResponse = true
-                displayText = null
-                console.log("[Message] Using product_data from content:", matchedProducts.length)
-            }
-            // Check for products array (titles only)
-            else if (parsedContent.products && Array.isArray(parsedContent.products) && parsedContent.products.length > 0) {
-                // Show as comma-separated list since we don't have full data
-                displayText = `I found these products: ${parsedContent.products.join(', ')}`
-                console.log("[Message] Showing product titles as text")
+                showProductCards = true
+                isStructuredProductTurn = true
+            } else if (parsedContent.products && Array.isArray(parsedContent.products) && parsedContent.products.length > 0) {
+                displayText = displayText || `I found these products: ${parsedContent.products.join(', ')}`
             }
         }
     }
+
+    const hasDisplayText = Boolean(displayText)
 
     const preserveLineBreaks = (text) => {
         if (!text) return '▋';
@@ -87,12 +82,19 @@ export default function Message({role, content, imageUrl, products, streaming}) 
         <div className="enox-msg enox-msg--bot">
             <div className="enox-msg-avatar" aria-hidden="true">✦</div>
             <div className="enox-msg-bubble">
-                {isProductResponse ? (
-                    matchedProducts && matchedProducts.length > 0 ? (
-                        <ProductCards products={matchedProducts}/>
-                    ) : (
-                        <span>Sorry, I couldn't find those products right now.</span>
-                    )
+                {isStructuredProductTurn ? (
+                    <>
+                        {hasDisplayText && (
+                            <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
+                                {preserveLineBreaks(displayText)}
+                            </ReactMarkdown>
+                        )}
+                        {showProductCards ? (
+                            <ProductCards products={matchedProducts}/>
+                        ) : !hasDisplayText ? (
+                            <span>Sorry, I couldn't find those products right now.</span>
+                        ) : null}
+                    </>
                 ) : (
                     <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
                         {preserveLineBreaks(displayText)}

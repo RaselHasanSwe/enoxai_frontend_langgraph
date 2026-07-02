@@ -82,7 +82,7 @@ export function useChat() {
         try {
           const parsed = JSON.parse(m.message)
           if (parsed && typeof parsed === 'object') {
-            if (Array.isArray(parsed.product_data) && parsed.product_data.length > 0) {
+            if (Array.isArray(parsed.product_data)) {
               products = parsed.product_data
             }
             if (parsed.message && typeof parsed.message === 'string') {
@@ -166,14 +166,17 @@ export function useChat() {
           )
         },
 
-        // onProductData — set products from SSE event (already parsed by chat.js)
-        (products) => {
-          console.log("[useChat] Received product_data from SSE:", products.length)
-          console.log("[useChat] First product:", products[0])
+        // onProductData — set products + friendly message from structured SSE event
+        (products, productMessage) => {
+          console.log("[useChat] Received product response:", products.length, productMessage)
           setMessages((prev) =>
             prev.map((m) => {
               if (m.id === botMsgId) {
-                return { ...m, products }
+                return {
+                  ...m,
+                  content: productMessage || m.content,
+                  products: products || [],
+                }
               }
               return m
             })
