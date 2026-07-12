@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { createUser, fetchHistory, streamMessage, BASE_URL } from '../api/chat'
+import { parseAssistantMessage } from '../utils/parseMessageContent'
 
 const STORAGE_KEY = 'enox_user'
 
@@ -70,36 +71,24 @@ export function useChat() {
       setHistoryPage(res.pagination.current_page)
 
       const mapped = [...res.data].reverse().map((m) => {
-        let products = undefined
-        let content = m.message
         let imageUrl = undefined
 
         if (m.image_path) {
           imageUrl = `${BASE_URL}/chat/uploads/${m.image_path}`
         }
 
-        // Try to extract product_data / display text from stored AI JSON
-        try {
-          const parsed = JSON.parse(m.message)
-          if (parsed && typeof parsed === 'object') {
-            if (Array.isArray(parsed.product_data)) {
-              products = parsed.product_data
-            }
-            if (parsed.message && typeof parsed.message === 'string') {
-              content = parsed.message
-            }
-          }
-        } catch {
-          // Not JSON, use as is
-        }
+        const isAssistant = m.role === 'ai'
+        const normalized = isAssistant
+          ? parseAssistantMessage(m.message)
+          : { content: m.message, products: undefined }
 
         return {
           id: makeId(),
-          role: m.role === 'ai' ? 'assistant' : 'user',
-          content: content,
+          role: isAssistant ? 'assistant' : 'user',
+          content: normalized.content,
           imageUrl,
           ts: m.timestamp,
-          products: products,
+          products: normalized.products,
           streaming: false,
         }
       })
@@ -172,10 +161,14 @@ export function useChat() {
           setMessages((prev) =>
             prev.map((m) => {
               if (m.id === botMsgId) {
+                const normalized = parseAssistantMessage(
+                  productMessage || m.content,
+                  products
+                )
                 return {
                   ...m,
-                  content: productMessage || m.content,
-                  products: products || [],
+                  content: normalized.content,
+                  products: normalized.products,
                 }
               }
               return m
@@ -189,20 +182,13 @@ export function useChat() {
           setMessages((prev) =>
             prev.map((m) => {
               if (m.id === botMsgId) {
-                // Final check: if we have products from SSE, keep them
-                // Otherwise try to extract from content
-                let finalProducts = m.products
-                if (!finalProducts) {
-                  try {
-                    const parsed = JSON.parse(m.content)
-                    if (parsed && parsed.product_data) {
-                      finalProducts = parsed.product_data
-                    }
-                  } catch {
-                    // Not JSON
-                  }
+                const normalized = parseAssistantMessage(m.content, m.products)
+                return {
+                  ...m,
+                  streaming: false,
+                  content: normalized.content,
+                  products: normalized.products,
                 }
-                return { ...m, streaming: false, products: finalProducts }
               }
               return m
             })
