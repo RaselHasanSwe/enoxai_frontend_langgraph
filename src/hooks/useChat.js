@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { createUser, fetchHistory, streamMessage, BASE_URL } from '../api/chat'
 import { parseAssistantMessage } from '../utils/parseMessageContent'
+import { createThumbnailPreview, fileToBase64 } from '../utils/imagePreview'
 
 const STORAGE_KEY = 'enox_user'
 
@@ -17,22 +18,6 @@ function saveUser(user) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(user))
 }
 
-function fileToBase64(file) {
-  return new Promise((resolve, reject) => {
-      const reader = new FileReader()
-
-      reader.onload = () => {
-          // Remove the data:image/...;base64, prefix
-          const base64 = reader.result.split(",")[1]
-          resolve(base64)
-      }
-
-      reader.onerror = reject
-
-      reader.readAsDataURL(file)
-  })
-}
-
 
 export function useChat() {
   const [user, setUser] = useState(loadUser)
@@ -43,13 +28,78 @@ export function useChat() {
   const [totalPages, setTotalPages] = useState(1)
   const [loadingHistory, setLoadingHistory] = useState(false)
   const [selectedImage, setSelectedImage] = useState(null)
+  const [imagePreviewUrl, setImagePreviewUrl] = useState(null)
+  const [imagePreviewLoading, setImagePreviewLoading] = useState(false)
 
   const streamController = useRef(null)
   const nextId = useRef(0)
+  const imageTaskRef = useRef(0)
+  const preparedBase64Ref = useRef(null)
+  const previewUrlRef = useRef(null)
 
   function makeId() {
     return ++nextId.current
   }
+
+  const clearSelectedImage = useCallback(() => {
+    imageTaskRef.current += 1
+    preparedBase64Ref.current = null
+    setSelectedImage(null)
+    setImagePreviewLoading(false)
+
+    if (previewUrlRef.current) {
+      URL.revokeObjectURL(previewUrlRef.current)
+      previewUrlRef.current = null
+    }
+    setImagePreviewUrl(null)
+  }, [])
+
+  const selectImage = useCallback(async (file) => {
+    if (!file) return
+
+    const taskId = ++imageTaskRef.current
+    preparedBase64Ref.current = null
+
+    if (previewUrlRef.current) {
+      URL.revokeObjectURL(previewUrlRef.current)
+      previewUrlRef.current = null
+    }
+
+    setSelectedImage(file)
+    setImagePreviewUrl(null)
+    setImagePreviewLoading(true)
+
+    fileToBase64(file)
+      .then((base64) => {
+        if (imageTaskRef.current === taskId) {
+          preparedBase64Ref.current = base64
+        }
+      })
+      .catch(() => {
+        if (imageTaskRef.current === taskId) {
+          preparedBase64Ref.current = null
+        }
+      })
+
+    try {
+      const url = await createThumbnailPreview(file)
+      if (imageTaskRef.current !== taskId) {
+        URL.revokeObjectURL(url)
+        return
+      }
+      previewUrlRef.current = url
+      setImagePreviewUrl(url)
+    } catch {
+      if (imageTaskRef.current === taskId) {
+        previewUrlRef.current = null
+        setImagePreviewUrl(null)
+      }
+    } finally {
+      if (imageTaskRef.current === taskId) {
+        setImagePreviewLoading(false)
+      }
+    }
+  }, [])
 
   async function registerUser(name, email) {
     const result = await createUser(name, email)
@@ -109,25 +159,17 @@ export function useChat() {
   }
 
   const sendMessage = useCallback(
-    async (text, selectedImage) => {
+    async (text) => {
       if (!text.trim() || isStreaming || !user) return
 
-      console.log("selectedImage 1:", selectedImage);
-      let image_base64 = null
-       if (selectedImage) {
-            image_base64 = await fileToBase64(selectedImage)
-        }
-
-      let imageUrl = null
-      if (selectedImage) {
-        imageUrl = URL.createObjectURL(selectedImage)
-      }
+      const imageFile = selectedImage
+      const messageImageUrl = imagePreviewUrl
 
       const userMsg = {
         id: makeId(),
         role: 'user',
         content: text,
-        imageUrl,
+        imageUrl: messageImageUrl,
         ts: null,
         streaming: false,
       }
@@ -137,7 +179,23 @@ export function useChat() {
       setMessages((prev) => [...prev, userMsg, botMsg])
       setIsStreaming(true)
       setInputValue('')
+
+      // Detach preview URL from composer state without revoking (used in sent message)
+      imageTaskRef.current += 1
+      const preparedBase64 = preparedBase64Ref.current
+      preparedBase64Ref.current = null
+      previewUrlRef.current = null
       setSelectedImage(null)
+      setImagePreviewUrl(null)
+      setImagePreviewLoading(false)
+
+      let image_base64 = null
+      if (imageFile) {
+        image_base64 = preparedBase64
+        if (!image_base64) {
+          image_base64 = await fileToBase64(imageFile)
+        }
+      }
 
       streamController.current = streamMessage(
         text,
@@ -210,7 +268,7 @@ export function useChat() {
         }
       )
     },
-    [isStreaming, user]
+    [isStreaming, user, selectedImage, imagePreviewUrl]
   )
 
   function cancelStream() {
@@ -242,6 +300,9 @@ export function useChat() {
     loadOlderMessages,
     clearUser,
     selectedImage,
-    setSelectedImage,
+    imagePreviewUrl,
+    imagePreviewLoading,
+    selectImage,
+    clearSelectedImage,
   }
 }

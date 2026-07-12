@@ -1,49 +1,35 @@
-import {useEffect, useRef, useState} from 'react'
+import { useEffect, useRef } from 'react'
 import Message from './Message'
 
-// The main message list + input bar.
-// Props injected from App via useChat hook.
 export default function ChatWindow({
-                                       user,
-                                       messages,
-                                       inputValue,
-                                       setInputValue,
-                                       isStreaming,
-                                       loadingHistory,
-                                       historyPage,
-                                       totalPages,
-                                       sendMessage,
-                                       cancelStream,
-                                       loadOlderMessages,
-                                       clearUser,
-                                       selectedImage,
-                                       setSelectedImage
-                                   }) {
+    user,
+    messages,
+    inputValue,
+    setInputValue,
+    isStreaming,
+    loadingHistory,
+    historyPage,
+    totalPages,
+    sendMessage,
+    cancelStream,
+    loadOlderMessages,
+    clearUser,
+    selectedImage,
+    imagePreviewUrl,
+    imagePreviewLoading,
+    selectImage,
+    clearSelectedImage,
+}) {
     const bottomRef = useRef(null)
     const listRef = useRef(null)
     const fileInputRef = useRef(null)
-    const [previewUrl, setPreviewUrl] = useState(null)
-    const [previewLoading, setPreviewLoading] = useState(false)
 
     useEffect(() => {
-        if (!selectedImage) {
-            setPreviewUrl(null)
-            setPreviewLoading(false)
-            return
-        }
-        setPreviewLoading(true)
-        const url = URL.createObjectURL(selectedImage)
-        setPreviewUrl(url)
-        return () => URL.revokeObjectURL(url)
-    }, [selectedImage])
-
-    // Auto-scroll to bottom when new messages arrive
-    useEffect(() => {
-        bottomRef.current?.scrollIntoView({behavior: 'smooth'})
+        bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
     }, [messages])
 
-    function clearSelectedImage() {
-        setSelectedImage(null)
+    function handleClearImage() {
+        clearSelectedImage()
         if (fileInputRef.current) {
             fileInputRef.current.value = ''
         }
@@ -52,7 +38,10 @@ export default function ChatWindow({
     function handleImageSelect(e) {
         const file = e.target.files?.[0]
         if (file) {
-            setSelectedImage(file)
+            selectImage(file)
+        }
+        if (fileInputRef.current) {
+            fileInputRef.current.value = ''
         }
     }
 
@@ -62,7 +51,7 @@ export default function ChatWindow({
 
     function handleSend() {
         if (!canSend() || isStreaming) return
-        sendMessage(inputValue, selectedImage)
+        sendMessage(inputValue)
     }
 
     function handleKey(e) {
@@ -72,9 +61,10 @@ export default function ChatWindow({
         }
     }
 
+    const showImagePreview = Boolean(selectedImage)
+
     return (
         <div className="enox-chat-window">
-            {/* Greeting bar */}
             <div className="enox-chat-greeting">
                 <span>Hi, {user.name} 👋</span>
                 <button
@@ -86,9 +76,7 @@ export default function ChatWindow({
                 </button>
             </div>
 
-            {/* Message list */}
             <div className="enox-msg-list" ref={listRef}>
-                {/* Load older messages button */}
                 {historyPage < totalPages && (
                     <button
                         className="enox-btn-ghost enox-btn-center"
@@ -116,44 +104,46 @@ export default function ChatWindow({
                     />
                 ))}
 
-                <div ref={bottomRef}/>
+                <div ref={bottomRef} />
             </div>
 
-            {/* Input area */}
             <div className="enox-input-area">
-                {selectedImage && (
+                {showImagePreview && (
                     <div className="enox-image-preview">
                         <div
                             className="enox-image-preview-thumb"
-                            aria-busy={previewLoading}
-                            aria-label={previewLoading ? 'Loading image preview' : 'Image preview'}
+                            aria-busy={imagePreviewLoading}
+                            aria-label={imagePreviewLoading ? 'Loading image preview' : 'Image preview'}
                         >
-                            {previewUrl ? (
+                            {imagePreviewUrl ? (
                                 <img
-                                    src={previewUrl}
+                                    src={imagePreviewUrl}
                                     alt="Attachment preview"
-                                    onLoad={() => setPreviewLoading(false)}
-                                    onError={() => setPreviewLoading(false)}
                                 />
                             ) : (
-                                <div className="enox-image-preview-placeholder" aria-hidden="true"/>
+                                <div className="enox-image-preview-placeholder" aria-hidden="true" />
                             )}
-                            {previewLoading && (
+                            {imagePreviewLoading && (
                                 <div className="enox-image-preview-overlay" aria-hidden="true">
-                                    <div className="enox-image-preview-spinner"/>
+                                    <div className="enox-image-preview-spinner" />
                                 </div>
                             )}
                             <button
                                 type="button"
                                 className="enox-image-preview-remove"
-                                onClick={clearSelectedImage}
+                                onClick={handleClearImage}
                                 aria-label="Remove image"
                                 title="Remove image"
                             >
                                 ×
                             </button>
                         </div>
-                        <span className="enox-image-preview-name">{selectedImage.name}</span>
+                        <div className="enox-image-preview-meta">
+                            <span className="enox-image-preview-name">{selectedImage.name}</span>
+                            {imagePreviewLoading && (
+                                <span className="enox-image-preview-status">Preparing preview…</span>
+                            )}
+                        </div>
                     </div>
                 )}
 
@@ -178,7 +168,7 @@ export default function ChatWindow({
                                 d="M19 5h-2V4a2 2 0 0 0-2-2H9a2 2 0 0 0-2 2v1H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2zM9 4h6v1H9V4zm10 15H5V7h14v12z"
                                 fill="currentColor"
                             />
-                            <circle cx="12" cy="13" r="3.5" stroke="currentColor" strokeWidth="1.5" fill="none"/>
+                            <circle cx="12" cy="13" r="3.5" stroke="currentColor" strokeWidth="1.5" fill="none" />
                         </svg>
                     </label>
 

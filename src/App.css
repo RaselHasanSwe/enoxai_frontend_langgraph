@@ -392,6 +392,18 @@
     var(--enox-border) 50%,
     var(--enox-surface) 100%
   );
+  background-size: 200% 200%;
+  animation: enox-preview-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes enox-preview-pulse {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
 }
 
 .enox-image-preview-overlay {
@@ -451,6 +463,19 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   min-width: 0;
+}
+
+.enox-image-preview-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.enox-image-preview-status {
+  font-size: 11px;
+  color: var(--enox-text-muted);
+  opacity: 0.85;
 }
 
 .enox-msg-image {
