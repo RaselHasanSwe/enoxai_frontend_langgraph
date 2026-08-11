@@ -767,8 +767,8 @@
 }
 
 .enox-launcher svg {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   pointer-events: none;
   color: #767676;
 }
@@ -779,10 +779,6 @@
     bottom: 30px;
     right: 10px;
   }
-.enox-launcher {
-    width: 40px;
-    height: 40px;
-}
   .enox-panel {
     width: calc(100vw - 32px);
     height: 70vh;
