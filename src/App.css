@@ -625,12 +625,10 @@
   position: relative;
   width: 35px;
   height: 35px;
-  border-radius: 50%;
-  background: var(--enox-accent);
-  color: #fff;
-  border: none;
+  border-radius: 0%;
+  background: #f5f5f5;
+  border: 1px solid #000000;
   cursor: pointer;
-  box-shadow: 0 4px 16px rgba(91,76,245,0.35);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -638,19 +636,18 @@
 }
 
 .enox-launcher:hover {
-  background: var(--enox-accent-dark);
-  transform: scale(1.05);
+  background: #fff;
 }
 
 .enox-launcher--active {
-  background: var(--enox-accent-dark);
+  background: #fff;
 }
 
 .enox-launcher svg {
-  width: 17px;
-  height: 17px;
+  width: 20px;
+  height: 20px;
   pointer-events: none;
-  color: white;
+  color: #767676;
 }
 
 /* ── Responsive: narrow screens ──────────────────────────────────────────── */
