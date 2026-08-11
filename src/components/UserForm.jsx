@@ -37,7 +37,6 @@ export default function UserForm({ onSubmit, isLoading }) {
           onChange={(e) => setName(e.target.value)}
           onKeyDown={handleKey}
           disabled={isLoading}
-          autoFocus
         />
       </div>
 

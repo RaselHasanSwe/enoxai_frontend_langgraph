@@ -116,15 +116,17 @@ export default function App({ hostElement = null }) {
         {/* Body — show form if no user, otherwise chat */}
         <div className="enox-body">
           {!chat.user ? (
-            <>
-              <UserForm
-                onSubmit={handleFormSubmit}
-                isLoading={formLoading}
-              />
-              {formError && <p className="enox-error enox-error--global">{formError}</p>}
-            </>
+            isOpen && (
+              <>
+                <UserForm
+                  onSubmit={handleFormSubmit}
+                  isLoading={formLoading}
+                />
+                {formError && <p className="enox-error enox-error--global">{formError}</p>}
+              </>
+            )
           ) : (
-            <ChatWindow {...chat} isPanelOpen={isOpen} />
+            isOpen && <ChatWindow {...chat} isPanelOpen={isOpen} />
           )}
         </div>
       </div>

@@ -1,24 +1,35 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
-const CHAT_OPENED_KEY = 'enox_chat_opened_once'
-const TOOLTIP_INTERVAL_MS = 30000
+const TOOLTIP_SEEN_KEY = 'enox_launcher_tooltip_seen_at'
 const TOOLTIP_INITIAL_DELAY_MS = 1200
-const TOOLTIP_VISIBLE_MS = 20000
+const TOOLTIP_VISIBLE_MS = 15000
+const TOOLTIP_COOLDOWN_MS = 24 * 60 * 60 * 1000
+
+function isTooltipInCooldown() {
+  try {
+    const seenAt = localStorage.getItem(TOOLTIP_SEEN_KEY)
+    if (!seenAt) return false
+    return Date.now() - Number(seenAt) < TOOLTIP_COOLDOWN_MS
+  } catch {
+    return false
+  }
+}
+
+function markTooltipSeen() {
+  try {
+    localStorage.setItem(TOOLTIP_SEEN_KEY, String(Date.now()))
+  } catch {
+    // ignore storage errors (private browsing, etc.)
+  }
+}
 
 export function useLauncherTooltip(isOpen) {
   const [showTooltip, setShowTooltip] = useState(false)
-  const [tooltipDismissedForever, setTooltipDismissedForever] = useState(
-    () => localStorage.getItem(CHAT_OPENED_KEY) === '1'
-  )
   const hideTimerRef = useRef(null)
-
-  const dismissForever = useCallback(() => {
-    localStorage.setItem(CHAT_OPENED_KEY, '1')
-    setTooltipDismissedForever(true)
-    setShowTooltip(false)
-  }, [])
+  const hasScheduledRef = useRef(false)
 
   const hideTooltip = useCallback(() => {
+    markTooltipSeen()
     setShowTooltip(false)
     if (hideTimerRef.current) {
       clearTimeout(hideTimerRef.current)
@@ -26,28 +37,24 @@ export function useLauncherTooltip(isOpen) {
     }
   }, [])
 
-  const revealTooltip = useCallback(() => {
-    if (tooltipDismissedForever || isOpen) return
-    setShowTooltip(true)
-  }, [isOpen, tooltipDismissedForever])
-
   useEffect(() => {
     if (!isOpen) return
     hideTooltip()
-    dismissForever()
-  }, [isOpen, dismissForever, hideTooltip])
+  }, [isOpen, hideTooltip])
 
   useEffect(() => {
-    if (isOpen || tooltipDismissedForever) return
+    if (isOpen || isTooltipInCooldown() || hasScheduledRef.current) return
 
-    const initialTimer = setTimeout(revealTooltip, TOOLTIP_INITIAL_DELAY_MS)
-    const interval = setInterval(revealTooltip, TOOLTIP_INTERVAL_MS)
+    hasScheduledRef.current = true
 
-    return () => {
-      clearTimeout(initialTimer)
-      clearInterval(interval)
-    }
-  }, [isOpen, tooltipDismissedForever, revealTooltip])
+    const initialTimer = setTimeout(() => {
+      if (isOpen || isTooltipInCooldown()) return
+      markTooltipSeen()
+      setShowTooltip(true)
+    }, TOOLTIP_INITIAL_DELAY_MS)
+
+    return () => clearTimeout(initialTimer)
+  }, [isOpen])
 
   useEffect(() => {
     if (!showTooltip) return
@@ -65,8 +72,7 @@ export function useLauncherTooltip(isOpen) {
   }, [showTooltip])
 
   return {
-    showTooltip: showTooltip && !isOpen && !tooltipDismissedForever,
-    dismissForever,
+    showTooltip: showTooltip && !isOpen,
     hideTooltip,
   }
 }

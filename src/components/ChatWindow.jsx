@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import Message from './Message'
 import { getClipboardImageFile } from '../utils/imagePreview'
+import { focusChatInput } from '../utils/focus'
 
 export default function ChatWindow({
     user,
@@ -28,34 +29,34 @@ export default function ChatWindow({
     const fileInputRef = useRef(null)
     const inputRef = useRef(null)
     const wasStreamingRef = useRef(false)
+    const wasPanelOpenRef = useRef(isPanelOpen)
 
     useEffect(() => {
         bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
     }, [messages])
 
     useEffect(() => {
-        if (isPanelOpen && !isStreaming) {
-            requestAnimationFrame(() => {
-                inputRef.current?.focus()
-            })
+        const openedByUser = !wasPanelOpenRef.current && isPanelOpen
+        wasPanelOpenRef.current = isPanelOpen
+
+        if (openedByUser && !isStreaming) {
+            focusChatInput(inputRef)
         }
     }, [isPanelOpen, isStreaming])
 
     useEffect(() => {
-        if (wasStreamingRef.current && !isStreaming) {
-            requestAnimationFrame(() => {
-                inputRef.current?.focus()
-            })
+        if (wasStreamingRef.current && !isStreaming && isPanelOpen) {
+            focusChatInput(inputRef)
         }
         wasStreamingRef.current = isStreaming
-    }, [isStreaming])
+    }, [isStreaming, isPanelOpen])
 
     function handleClearImage() {
         clearSelectedImage()
         if (fileInputRef.current) {
             fileInputRef.current.value = ''
         }
-        inputRef.current?.focus()
+        focusChatInput(inputRef)
     }
 
     function handleImageSelect(e) {
@@ -66,7 +67,7 @@ export default function ChatWindow({
         if (fileInputRef.current) {
             fileInputRef.current.value = ''
         }
-        inputRef.current?.focus()
+        focusChatInput(inputRef)
     }
 
     function canSend() {
@@ -93,7 +94,7 @@ export default function ChatWindow({
 
         e.preventDefault()
         selectImage(file)
-        inputRef.current?.focus()
+        focusChatInput(inputRef)
     }
 
     const showImagePreview = Boolean(selectedImage)
