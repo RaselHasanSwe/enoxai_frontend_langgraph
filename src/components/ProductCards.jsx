@@ -1,5 +1,15 @@
 import {useState, useRef} from 'react'
 
+function isSafeProductUrl(url) {
+    if (!url || typeof url !== 'string') return false
+    try {
+        const parsed = new URL(url, 'https://enorsia.com')
+        return parsed.protocol === 'https:' || parsed.protocol === 'http:'
+    } catch {
+        return false
+    }
+}
+
 export default function ProductCards({products}) {
     const [index, setIndex] = useState(0)
     const touchStartX = useRef(null)
@@ -100,10 +110,12 @@ function ProductCard({product, onPrev, onNext}) {
         }
     }
 
+    const safeProductUrl = isSafeProductUrl(product_url) ? product_url : '#'
+
     return (
         <a
             className={`enox-product-card-v2${revealed ? ' enox-product-card-v2--revealed' : ''}`}
-            href={product_url}
+            href={safeProductUrl}
             target="_blank"
             rel="noopener noreferrer"
             aria-label={product_name}

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useChat } from './hooks/useChat'
+import { useLauncherTooltip } from './hooks/useLauncherTooltip'
 import UserForm from './components/UserForm'
 import ChatWindow from './components/ChatWindow'
 import './App.css'
@@ -23,6 +24,7 @@ export default function App({ hostElement = null }) {
   const [formError, setFormError] = useState('')
 
   const chat = useChat()
+  const { showTooltip, hideTooltip } = useLauncherTooltip(isOpen)
 
   useEffect(() => {
     if (!hostElement) return
@@ -122,30 +124,55 @@ export default function App({ hostElement = null }) {
               {formError && <p className="enox-error enox-error--global">{formError}</p>}
             </>
           ) : (
-            <ChatWindow {...chat} />
+            <ChatWindow {...chat} isPanelOpen={isOpen} />
           )}
         </div>
       </div>
 
       {/* ── Floating Launcher Button ─────────────────────────────────────── */}
-      <button
-        className={`enox-launcher ${isOpen ? 'enox-launcher--active' : ''}`}
-        onClick={toggleOpen}
-        aria-label={isOpen ? 'Close chat' : 'Open EnoXAI chat'}
-        title="EnoXAI"
-      >
-        {isOpen ? (
-          // Down arrow when open
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-            <polyline points="6 9 12 15 18 9" />
-          </svg>
-        ) : (
-          // Chat bubble icon when closed
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-          </svg>
+      <div className="enox-launcher-wrap">
+        {showTooltip && (
+          <div
+            className="enox-launcher-tooltip"
+            role="status"
+            aria-live="polite"
+          >
+            <button
+              type="button"
+              className="enox-launcher-tooltip-body"
+              onClick={() => setOpen(true)}
+            >
+              <span className="enox-launcher-tooltip-title">Hi, I'm EnoX</span>
+              <span className="enox-launcher-tooltip-text">Need help finding something?</span>
+            </button>
+            <button
+              type="button"
+              className="enox-launcher-tooltip-close"
+              onClick={hideTooltip}
+              aria-label="Dismiss"
+            >
+              ×
+            </button>
+          </div>
         )}
-      </button>
+
+        <button
+          className={`enox-launcher ${isOpen ? 'enox-launcher--active' : ''}`}
+          onClick={toggleOpen}
+          aria-label={isOpen ? 'Close chat' : 'Open EnoXAI chat'}
+          title="EnoXAI"
+        >
+          {isOpen ? (
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+          ) : (
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+            </svg>
+          )}
+        </button>
+      </div>
     </div>
   )
 }

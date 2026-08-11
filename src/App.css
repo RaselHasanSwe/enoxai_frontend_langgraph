@@ -5,20 +5,22 @@
 
 /* ── Tokens ──────────────────────────────────────────────────────────────── */
 .enox-root {
-  --enox-accent:      #000000;
-  --enox-accent-dark: #4639d4;
+  --enox-accent:      #111111;
+  --enox-accent-hover:#333333;
   --enox-bg:          #ffffff;
-  --enox-surface:     #f6f6f9;
-  --enox-border:      #e4e4ec;
-  --enox-text:        #1a1a2e;
-  --enox-text-muted:  #6b6b8a;
-  --enox-user-bg:     #000000;
+  --enox-surface:     #f7f7f7;
+  --enox-surface-2:   #efefef;
+  --enox-border:      #e0e0e0;
+  --enox-border-strong:#c8c8c8;
+  --enox-text:        #111111;
+  --enox-text-muted:  #6b6b6b;
+  --enox-user-bg:     #111111;
   --enox-user-text:   #ffffff;
-  --enox-bot-bg:      #f0f0f8;
-  --enox-bot-text:    #1a1a2e;
-  --enox-radius:      14px;
-  --enox-shadow:      0 8px 32px rgba(91,76,245,0.18), 0 2px 8px rgba(0,0,0,0.08);
-  --enox-font:        system-ui, -apple-system, sans-serif;
+  --enox-bot-bg:      #f5f5f5;
+  --enox-bot-text:    #1a1a1a;
+  --enox-radius:      12px;
+  --enox-shadow:      0 12px 40px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.06);
+  --enox-font:        system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --enox-panel-w:     380px;
   --enox-panel-h:     560px;
   --enox-z:           9999;
@@ -207,7 +209,7 @@
 }
 
 .enox-btn-primary:hover:not(:disabled) {
-  background: var(--enox-accent-dark);
+  background: var(--enox-accent-hover);
 }
 
 .enox-btn-primary:disabled {
@@ -237,11 +239,12 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 14px;
-  background: var(--enox-surface);
+  padding: 10px 16px;
+  background: var(--enox-bg);
   border-bottom: 1px solid var(--enox-border);
   font-size: 13px;
-  color: var(--enox-text-muted);
+  font-weight: 500;
+  color: var(--enox-text);
   flex-shrink: 0;
 }
 
@@ -318,10 +321,11 @@
 .enox-msg--bot .enox-msg-bubble ol { margin: 4px 0; padding-left: 18px; }
 .enox-msg--bot .enox-msg-bubble li { margin-bottom: 2px; }
 .enox-msg--bot .enox-msg-bubble code {
-  background: rgba(91,76,245,0.1);
+  background: var(--enox-surface-2);
   padding: 1px 5px;
   border-radius: 4px;
   font-size: 12px;
+  color: var(--enox-text);
 }
 .enox-msg--bot .enox-msg-bubble pre {
   background: #1a1a2e;
@@ -358,6 +362,7 @@
   flex-shrink: 0;
   border-top: 1px solid var(--enox-border);
   background: var(--enox-bg);
+  padding-bottom: 2px;
 }
 
 .enox-image-preview {
@@ -439,7 +444,7 @@
   height: 22px;
   border: 2px solid var(--enox-bg);
   border-radius: 50%;
-  background: #1a1a2e;
+  background: #111111;
   color: #fff;
   font-size: 14px;
   line-height: 1;
@@ -501,51 +506,71 @@
 .enox-input-bar {
   display: flex;
   align-items: flex-end;
-  gap: 8px;
-  padding: 10px 12px;
+  gap: 6px;
+  margin: 10px 12px 12px;
+  padding: 6px 6px 6px 8px;
   flex-shrink: 0;
+  background: var(--enox-surface);
+  border: 1px solid var(--enox-border);
+  border-radius: 14px;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.enox-input-bar:focus-within {
+  border-color: var(--enox-border-strong);
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.04);
+  background: var(--enox-bg);
 }
 
 .enox-btn-image {
-  width: 36px;
-  height: 36px;
-  border: 1.5px solid var(--enox-border);
-  border-radius: 50%;
-  background: var(--enox-surface);
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
   color: var(--enox-text-muted);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  transition: background 0.15s, color 0.15s;
 }
 
 .enox-btn-image:hover {
-  background: var(--enox-border);
-  border-color: var(--enox-accent);
-  color: var(--enox-accent);
+  background: var(--enox-surface-2);
+  color: var(--enox-text);
+}
+
+.enox-btn-image--disabled {
+  opacity: 0.45;
+  pointer-events: none;
 }
 
 .enox-input {
   flex: 1;
-  padding: 9px 12px;
-  border: 1.5px solid var(--enox-border);
-  border-radius: 10px;
-  font-size: 13.5px;
+  padding: 8px 4px;
+  border: none;
+  border-radius: 0;
+  font-size: 14px;
   font-family: var(--enox-font);
   color: var(--enox-text);
-  background: var(--enox-bg);
+  background: transparent;
   resize: none;
   outline: none;
   max-height: 120px;
   overflow-y: auto;
   line-height: 1.5;
-  transition: border-color 0.15s;
+  min-height: 22px;
 }
 
-.enox-input:focus {
-  border-color: var(--enox-accent);
+.enox-input::placeholder {
+  color: #9a9a9a;
+}
+
+.enox-input:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 .enox-btn-send,
@@ -553,13 +578,12 @@
   width: 36px;
   height: 36px;
   border: none;
-  border-radius: 50%;
-  font-size: 16px;
+  border-radius: 10px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.15s, opacity 0.15s;
+  transition: background 0.15s, opacity 0.15s, transform 0.1s;
   flex-shrink: 0;
   font-family: var(--enox-font);
 }
@@ -570,21 +594,27 @@
 }
 
 .enox-btn-send:hover:not(:disabled) {
-  background: var(--enox-accent-dark);
+  background: var(--enox-accent-hover);
+  transform: scale(1.02);
+}
+
+.enox-btn-send:active:not(:disabled) {
+  transform: scale(0.98);
 }
 
 .enox-btn-send:disabled {
-  opacity: 0.4;
+  background: var(--enox-surface-2);
+  color: #b0b0b0;
   cursor: not-allowed;
 }
 
 .enox-btn-stop {
-  background: #f5e8e8;
-  color: #d94040;
+  background: #111111;
+  color: #fff;
 }
 
 .enox-btn-stop:hover {
-  background: #fad5d5;
+  background: #333333;
 }
 
 /* ── Ghost / small buttons ───────────────────────────────────────────────── */
@@ -621,11 +651,108 @@
 }
 
 /* ── Floating launcher button ────────────────────────────────────────────── */
+.enox-launcher-wrap {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.enox-launcher-tooltip {
+  position: absolute;
+  bottom: calc(100% + 12px);
+  right: 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  max-width: 240px;
+  padding: 10px 12px;
+  background: #111111;
+  color: #fff;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+  animation: enox-tooltip-in 0.35s ease;
+  z-index: 1;
+}
+
+.enox-launcher-tooltip::after {
+  content: '';
+  position: absolute;
+  bottom: -6px;
+  right: 14px;
+  width: 12px;
+  height: 12px;
+  background: #111111;
+  transform: rotate(45deg);
+  border-radius: 2px;
+}
+
+.enox-launcher-tooltip-body {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.enox-launcher-tooltip-body:hover .enox-launcher-tooltip-text {
+  text-decoration: underline;
+}
+
+.enox-launcher-tooltip-title {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.enox-launcher-tooltip-text {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  line-height: 1.35;
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.enox-launcher-tooltip-close {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.enox-launcher-tooltip-close:hover {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+@keyframes enox-tooltip-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .enox-launcher {
   position: relative;
   width: 35px;
   height: 35px;
-  border-radius: 0%;
+  border-radius: 0;
   background: #f5f5f5;
   border: 1px solid #000000;
   cursor: pointer;

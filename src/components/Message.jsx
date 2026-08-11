@@ -1,10 +1,17 @@
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import rehypeRaw from 'rehype-raw'
+import rehypeSanitize, { defaultSchema } from 'rehype-sanitize'
 import ProductCards from './ProductCards'
 import { parseAssistantMessage } from '../utils/parseMessageContent'
 
-export default function Message({ role, content, imageUrl, products, streaming }) {
+const markdownPlugins = [remarkGfm]
+const rehypePlugins = [
+    rehypeRaw,
+    [rehypeSanitize, defaultSchema],
+]
+
+export default function Message({ role, content, imageUrl, products, streaming, cancelled }) {
     const isUser = role === 'user'
 
     if (isUser) {
@@ -24,7 +31,7 @@ export default function Message({ role, content, imageUrl, products, streaming }
         )
     }
 
-    if (streaming) {
+    if (streaming && !content?.trim()) {
         return (
             <div className="enox-msg enox-msg--bot">
                 <div className="enox-msg-avatar" aria-hidden="true">✦</div>
@@ -38,9 +45,11 @@ export default function Message({ role, content, imageUrl, products, streaming }
     }
 
     const normalized = parseAssistantMessage(content, products)
-    const displayText = normalized.content?.trim() || ''
+    const displayText = cancelled
+        ? 'Response cancelled.'
+        : (normalized.content?.trim() || '')
     const matchedProducts = normalized.products || []
-    const showProductCards = matchedProducts.length > 0
+    const showProductCards = matchedProducts.length > 0 && !cancelled
     const hasDisplayText = Boolean(displayText)
 
     const preserveLineBreaks = (text) => {
@@ -53,7 +62,10 @@ export default function Message({ role, content, imageUrl, products, streaming }
             <div className="enox-msg-avatar" aria-hidden="true">✦</div>
             <div className="enox-msg-bubble">
                 {hasDisplayText && (
-                    <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
+                    <ReactMarkdown
+                        remarkPlugins={markdownPlugins}
+                        rehypePlugins={rehypePlugins}
+                    >
                         {preserveLineBreaks(displayText)}
                     </ReactMarkdown>
                 )}

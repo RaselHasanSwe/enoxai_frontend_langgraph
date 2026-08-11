@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import Message from './Message'
+import { getClipboardImageFile } from '../utils/imagePreview'
 
 export default function ChatWindow({
     user,
@@ -8,6 +9,7 @@ export default function ChatWindow({
     setInputValue,
     isStreaming,
     loadingHistory,
+    historyError,
     historyPage,
     totalPages,
     sendMessage,
@@ -19,20 +21,41 @@ export default function ChatWindow({
     imagePreviewLoading,
     selectImage,
     clearSelectedImage,
+    isPanelOpen = true,
 }) {
     const bottomRef = useRef(null)
     const listRef = useRef(null)
     const fileInputRef = useRef(null)
+    const inputRef = useRef(null)
+    const wasStreamingRef = useRef(false)
 
     useEffect(() => {
         bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
     }, [messages])
+
+    useEffect(() => {
+        if (isPanelOpen && !isStreaming) {
+            requestAnimationFrame(() => {
+                inputRef.current?.focus()
+            })
+        }
+    }, [isPanelOpen, isStreaming])
+
+    useEffect(() => {
+        if (wasStreamingRef.current && !isStreaming) {
+            requestAnimationFrame(() => {
+                inputRef.current?.focus()
+            })
+        }
+        wasStreamingRef.current = isStreaming
+    }, [isStreaming])
 
     function handleClearImage() {
         clearSelectedImage()
         if (fileInputRef.current) {
             fileInputRef.current.value = ''
         }
+        inputRef.current?.focus()
     }
 
     function handleImageSelect(e) {
@@ -43,10 +66,11 @@ export default function ChatWindow({
         if (fileInputRef.current) {
             fileInputRef.current.value = ''
         }
+        inputRef.current?.focus()
     }
 
     function canSend() {
-        return Boolean(inputValue.trim())
+        return Boolean(inputValue.trim() || selectedImage)
     }
 
     function handleSend() {
@@ -61,12 +85,23 @@ export default function ChatWindow({
         }
     }
 
+    function handlePaste(e) {
+        if (isStreaming) return
+
+        const file = getClipboardImageFile(e.clipboardData)
+        if (!file) return
+
+        e.preventDefault()
+        selectImage(file)
+        inputRef.current?.focus()
+    }
+
     const showImagePreview = Boolean(selectedImage)
 
     return (
-        <div className="enox-chat-window">
+        <div className="enox-chat-window" onPasteCapture={handlePaste}>
             <div className="enox-chat-greeting">
-                <span>Hi, {user.name} 👋</span>
+                <span>Hi, {user.name}</span>
                 <button
                     className="enox-btn-ghost enox-btn-sm"
                     onClick={clearUser}
@@ -77,6 +112,12 @@ export default function ChatWindow({
             </div>
 
             <div className="enox-msg-list" ref={listRef}>
+                {historyError && (
+                    <div className="enox-empty">
+                        <span>{historyError}</span>
+                    </div>
+                )}
+
                 {historyPage < totalPages && (
                     <button
                         className="enox-btn-ghost enox-btn-center"
@@ -101,6 +142,7 @@ export default function ChatWindow({
                         imageUrl={m.imageUrl}
                         products={m.products}
                         streaming={m.streaming}
+                        cancelled={m.cancelled}
                     />
                 ))}
 
@@ -151,53 +193,62 @@ export default function ChatWindow({
                     <input
                         ref={fileInputRef}
                         type="file"
-                        accept="image/*"
+                        accept="image/jpeg,image/png,image/webp,image/gif"
                         id="image-upload"
                         hidden
                         onChange={handleImageSelect}
+                        disabled={isStreaming}
                     />
 
                     <label
                         htmlFor="image-upload"
-                        className="enox-btn-image"
+                        className={`enox-btn-image${isStreaming ? ' enox-btn-image--disabled' : ''}`}
                         title="Attach image"
                         aria-label="Attach image"
                     >
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                            <path
-                                d="M19 5h-2V4a2 2 0 0 0-2-2H9a2 2 0 0 0-2 2v1H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2zM9 4h6v1H9V4zm10 15H5V7h14v12z"
-                                fill="currentColor"
-                            />
-                            <circle cx="12" cy="13" r="3.5" stroke="currentColor" strokeWidth="1.5" fill="none" />
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                            <rect x="3" y="5" width="18" height="14" rx="2" stroke="currentColor" strokeWidth="1.5" />
+                            <circle cx="8.5" cy="10" r="1.5" fill="currentColor" />
+                            <path d="M3 16l4.5-4.5 3 3L14 11l7 7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                         </svg>
                     </label>
 
                     <textarea
+                        ref={inputRef}
                         className="enox-input"
-                        placeholder={selectedImage ? 'Describe this image (required)…' : 'Type a message…'}
+                        placeholder={selectedImage ? 'Describe this image…' : 'Type your message…'}
                         value={inputValue}
                         onChange={(e) => setInputValue(e.target.value)}
                         onKeyDown={handleKey}
                         rows={1}
                         disabled={isStreaming}
+                        aria-label="Message input"
                     />
 
                     {isStreaming ? (
                         <button
+                            type="button"
                             className="enox-btn-stop"
                             onClick={cancelStream}
-                            title="Stop"
+                            title="Stop response"
+                            aria-label="Stop response"
                         >
-                            ■
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                                <rect x="6" y="6" width="12" height="12" rx="1" />
+                            </svg>
                         </button>
                     ) : (
                         <button
+                            type="button"
                             className="enox-btn-send"
                             onClick={handleSend}
                             disabled={!canSend()}
-                            title="Send"
+                            title="Send message"
+                            aria-label="Send message"
                         >
-                            ↑
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                <path d="M5 12h12M13 7l5 5-5 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
                         </button>
                     )}
                 </div>

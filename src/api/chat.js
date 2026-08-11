@@ -3,6 +3,10 @@
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL
 
+if (!BASE_URL && import.meta.env.PROD) {
+  console.error('VITE_API_BASE_URL is not configured')
+}
+
 export { BASE_URL }
 
 // ── Create or fetch a user session ──────────────────────────────────────────
@@ -17,9 +21,9 @@ export async function createUser(name, email) {
 }
 
 // ── Fetch paginated chat history ─────────────────────────────────────────────
-export async function fetchHistory(userId, page = 1) {
+export async function fetchHistory(userId, sessionId, page = 1) {
   const res = await fetch(
-    `${BASE_URL}/chat/history?user_id=${userId}&page=${page}`
+    `${BASE_URL}/chat/history?user_id=${userId}&session_id=${encodeURIComponent(sessionId)}&page=${page}`
   )
   if (!res.ok) throw new Error('Failed to fetch history')
   return res.json() // { user, data, pagination }
@@ -35,8 +39,6 @@ export async function fetchHistory(userId, page = 1) {
 // Returns an AbortController so the caller can cancel.
 export function streamMessage(message, sessionId, image_base64, onToken, onProductData, onDone, onError) {
   const controller = new AbortController()
-
-  console.log("image_base64",image_base64)
 
   fetch(`${BASE_URL}/chat/stream`, {
     method: 'POST',

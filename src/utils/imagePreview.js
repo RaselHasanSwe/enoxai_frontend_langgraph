@@ -1,4 +1,24 @@
 const PREVIEW_MAX_DIMENSION = 128
+const MAX_IMAGE_BYTES = 10 * 1024 * 1024
+const ALLOWED_IMAGE_TYPES = new Set([
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/gif',
+])
+
+export function validateImageFile(file) {
+  if (!file) {
+    throw new Error('No image selected.')
+  }
+  if (!ALLOWED_IMAGE_TYPES.has(file.type)) {
+    throw new Error('Please upload a JPG, PNG, WEBP, or GIF image.')
+  }
+  if (file.size > MAX_IMAGE_BYTES) {
+    throw new Error('Image must be smaller than 10 MB.')
+  }
+  return file
+}
 
 export function fileToBase64(file) {
   return new Promise((resolve, reject) => {
@@ -14,10 +34,21 @@ export function fileToBase64(file) {
   })
 }
 
-export async function createThumbnailPreview(file, maxDimension = PREVIEW_MAX_DIMENSION) {
-  if (!file?.type?.startsWith('image/')) {
-    throw new Error('Not an image file')
+export function getClipboardImageFile(clipboardData) {
+  if (!clipboardData?.items) return null
+
+  for (const item of clipboardData.items) {
+    if (item.type.startsWith('image/')) {
+      const file = item.getAsFile()
+      if (file) return file
+    }
   }
+
+  return null
+}
+
+export async function createThumbnailPreview(file, maxDimension = PREVIEW_MAX_DIMENSION) {
+  validateImageFile(file)
 
   if (typeof createImageBitmap !== 'function') {
     return URL.createObjectURL(file)

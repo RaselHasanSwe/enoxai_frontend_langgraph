@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { createUser, fetchHistory, streamMessage, BASE_URL } from '../api/chat'
 import { parseAssistantMessage } from '../utils/parseMessageContent'
-import { createThumbnailPreview, fileToBase64 } from '../utils/imagePreview'
+import { createThumbnailPreview, fileToBase64, validateImageFile } from '../utils/imagePreview'
 
 const STORAGE_KEY = 'enox_user'
 
@@ -27,6 +27,7 @@ export function useChat() {
   const [historyPage, setHistoryPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [loadingHistory, setLoadingHistory] = useState(false)
+  const [historyError, setHistoryError] = useState('')
   const [selectedImage, setSelectedImage] = useState(null)
   const [imagePreviewUrl, setImagePreviewUrl] = useState(null)
   const [imagePreviewLoading, setImagePreviewLoading] = useState(false)
@@ -56,6 +57,13 @@ export function useChat() {
 
   const selectImage = useCallback(async (file) => {
     if (!file) return
+
+    try {
+      validateImageFile(file)
+    } catch (err) {
+      setHistoryError(err.message || 'Unsupported image file.')
+      return
+    }
 
     const taskId = ++imageTaskRef.current
     preparedBase64Ref.current = null
@@ -114,9 +122,11 @@ export function useChat() {
   }, [user?.id])
 
   async function loadHistory(userId, page, replace = false) {
+    if (!user?.session_id) return
     setLoadingHistory(true)
+    setHistoryError('')
     try {
-      const res = await fetchHistory(userId, page)
+      const res = await fetchHistory(userId, user.session_id, page)
       setTotalPages(res.pagination.total_pages)
       setHistoryPage(res.pagination.current_page)
 
@@ -148,6 +158,8 @@ export function useChat() {
       } else {
         setMessages((prev) => [...mapped, ...prev])
       }
+    } catch {
+      setHistoryError('Could not load chat history. You can still send new messages.')
     } finally {
       setLoadingHistory(false)
     }
@@ -160,15 +172,17 @@ export function useChat() {
 
   const sendMessage = useCallback(
     async (text) => {
-      if (!text.trim() || isStreaming || !user) return
-
+      const trimmedText = text.trim()
       const imageFile = selectedImage
+      if ((!trimmedText && !imageFile) || isStreaming || !user) return
+
       const messageImageUrl = imagePreviewUrl
+      const messageText = trimmedText || 'Please help me with this image.'
 
       const userMsg = {
         id: makeId(),
         role: 'user',
-        content: text,
+        content: messageText,
         imageUrl: messageImageUrl,
         ts: null,
         streaming: false,
@@ -198,7 +212,7 @@ export function useChat() {
       }
 
       streamController.current = streamMessage(
-        text,
+        messageText,
         user.session_id,
         image_base64,
         // onToken — accumulate content
@@ -215,7 +229,6 @@ export function useChat() {
 
         // onProductData — set products + friendly message from structured SSE event
         (products, productMessage) => {
-          console.log("[useChat] Received product response:", products.length, productMessage)
           setMessages((prev) =>
             prev.map((m) => {
               if (m.id === botMsgId) {
@@ -236,7 +249,6 @@ export function useChat() {
 
         // onDone — mark streaming complete
         () => {
-          console.log("[useChat] Stream complete")
           setMessages((prev) =>
             prev.map((m) => {
               if (m.id === botMsgId) {
@@ -256,11 +268,13 @@ export function useChat() {
 
         // onError
         (err) => {
-          console.error("[useChat] Stream error:", err)
+          const userMessage = import.meta.env.DEV
+            ? `⚠️ Error: ${err}`
+            : 'Something went wrong. Please try again.'
           setMessages((prev) =>
             prev.map((m) =>
               m.id === botMsgId
-                ? { ...m, content: `⚠️ Error: ${err}`, streaming: false }
+                ? { ...m, content: userMessage, streaming: false }
                 : m
             )
           )
@@ -274,7 +288,16 @@ export function useChat() {
   function cancelStream() {
     streamController.current?.abort()
     setMessages((prev) =>
-      prev.map((m) => (m.streaming ? { ...m, streaming: false } : m))
+      prev.map((m) => (
+        m.streaming
+          ? {
+              ...m,
+              streaming: false,
+              cancelled: !m.content?.trim(),
+              content: m.content?.trim() ? m.content : 'Response cancelled.',
+            }
+          : m
+      ))
     )
     setIsStreaming(false)
   }
@@ -292,6 +315,7 @@ export function useChat() {
     setInputValue,
     isStreaming,
     loadingHistory,
+    historyError,
     historyPage,
     totalPages,
     registerUser,
