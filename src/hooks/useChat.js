@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { createUser, fetchHistory, streamMessage, BASE_URL } from '../api/chat'
 import { parseAssistantMessage } from '../utils/parseMessageContent'
-import { createThumbnailPreview, fileToBase64, validateImageFile } from '../utils/imagePreview'
+import { createThumbnailPreview, createDisplayPreview, fileToBase64, validateImageFile } from '../utils/imagePreview'
 
 const STORAGE_KEY = 'enox_user'
 
@@ -37,6 +37,18 @@ export function useChat() {
   const imageTaskRef = useRef(0)
   const preparedBase64Ref = useRef(null)
   const previewUrlRef = useRef(null)
+  const displayUrlRef = useRef(null)
+
+  function revokeImageUrl(url) {
+    if (url) URL.revokeObjectURL(url)
+  }
+
+  function clearImageUrls() {
+    revokeImageUrl(previewUrlRef.current)
+    revokeImageUrl(displayUrlRef.current)
+    previewUrlRef.current = null
+    displayUrlRef.current = null
+  }
 
   function makeId() {
     return ++nextId.current
@@ -47,11 +59,7 @@ export function useChat() {
     preparedBase64Ref.current = null
     setSelectedImage(null)
     setImagePreviewLoading(false)
-
-    if (previewUrlRef.current) {
-      URL.revokeObjectURL(previewUrlRef.current)
-      previewUrlRef.current = null
-    }
+    clearImageUrls()
     setImagePreviewUrl(null)
   }, [])
 
@@ -67,11 +75,7 @@ export function useChat() {
 
     const taskId = ++imageTaskRef.current
     preparedBase64Ref.current = null
-
-    if (previewUrlRef.current) {
-      URL.revokeObjectURL(previewUrlRef.current)
-      previewUrlRef.current = null
-    }
+    clearImageUrls()
 
     setSelectedImage(file)
     setImagePreviewUrl(null)
@@ -90,13 +94,18 @@ export function useChat() {
       })
 
     try {
-      const url = await createThumbnailPreview(file)
+      const [thumbUrl, displayUrl] = await Promise.all([
+        createThumbnailPreview(file),
+        createDisplayPreview(file),
+      ])
       if (imageTaskRef.current !== taskId) {
-        URL.revokeObjectURL(url)
+        revokeImageUrl(thumbUrl)
+        revokeImageUrl(displayUrl)
         return
       }
-      previewUrlRef.current = url
-      setImagePreviewUrl(url)
+      previewUrlRef.current = thumbUrl
+      displayUrlRef.current = displayUrl
+      setImagePreviewUrl(thumbUrl)
     } catch {
       if (imageTaskRef.current === taskId) {
         previewUrlRef.current = null
@@ -176,7 +185,7 @@ export function useChat() {
       const imageFile = selectedImage
       if ((!trimmedText && !imageFile) || isStreaming || !user) return
 
-      const messageImageUrl = imagePreviewUrl
+      const messageImageUrl = displayUrlRef.current || imagePreviewUrl
       const messageText = trimmedText || 'Please help me with this image.'
 
       const userMsg = {
@@ -194,11 +203,20 @@ export function useChat() {
       setIsStreaming(true)
       setInputValue('')
 
-      // Detach preview URL from composer state without revoking (used in sent message)
+      // Detach image URLs from composer — keep display URL alive for the sent message
       imageTaskRef.current += 1
       const preparedBase64 = preparedBase64Ref.current
       preparedBase64Ref.current = null
+
+      const thumbUrl = previewUrlRef.current
+      const sentDisplayUrl = displayUrlRef.current
       previewUrlRef.current = null
+      displayUrlRef.current = null
+
+      if (thumbUrl && thumbUrl !== sentDisplayUrl) {
+        revokeImageUrl(thumbUrl)
+      }
+
       setSelectedImage(null)
       setImagePreviewUrl(null)
       setImagePreviewLoading(false)

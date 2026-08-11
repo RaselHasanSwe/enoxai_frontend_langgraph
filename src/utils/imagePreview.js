@@ -1,4 +1,5 @@
 const PREVIEW_MAX_DIMENSION = 128
+const DISPLAY_MAX_DIMENSION = 1024
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024
 const ALLOWED_IMAGE_TYPES = new Set([
   'image/jpeg',
@@ -47,7 +48,7 @@ export function getClipboardImageFile(clipboardData) {
   return null
 }
 
-export async function createThumbnailPreview(file, maxDimension = PREVIEW_MAX_DIMENSION) {
+async function createResizedPreview(file, maxDimension, quality) {
   validateImageFile(file)
 
   if (typeof createImageBitmap !== 'function') {
@@ -57,6 +58,12 @@ export async function createThumbnailPreview(file, maxDimension = PREVIEW_MAX_DI
   const bitmap = await createImageBitmap(file)
   const { width, height } = bitmap
   const scale = Math.min(1, maxDimension / Math.max(width, height))
+
+  if (scale >= 1) {
+    bitmap.close()
+    return URL.createObjectURL(file)
+  }
+
   const targetW = Math.max(1, Math.round(width * scale))
   const targetH = Math.max(1, Math.round(height * scale))
   bitmap.close()
@@ -64,7 +71,7 @@ export async function createThumbnailPreview(file, maxDimension = PREVIEW_MAX_DI
   const resized = await createImageBitmap(file, {
     resizeWidth: targetW,
     resizeHeight: targetH,
-    resizeQuality: 'medium',
+    resizeQuality: 'high',
   })
 
   try {
@@ -72,7 +79,7 @@ export async function createThumbnailPreview(file, maxDimension = PREVIEW_MAX_DI
       const canvas = new OffscreenCanvas(targetW, targetH)
       const ctx = canvas.getContext('2d')
       ctx.drawImage(resized, 0, 0)
-      const blob = await canvas.convertToBlob({ type: 'image/jpeg', quality: 0.85 })
+      const blob = await canvas.convertToBlob({ type: 'image/jpeg', quality })
       return URL.createObjectURL(blob)
     }
 
@@ -85,9 +92,19 @@ export async function createThumbnailPreview(file, maxDimension = PREVIEW_MAX_DI
       canvas.toBlob((blob) => {
         if (!blob) reject(new Error('Preview failed'))
         else resolve(URL.createObjectURL(blob))
-      }, 'image/jpeg', 0.85)
+      }, 'image/jpeg', quality)
     })
   } finally {
     resized.close()
   }
+}
+
+/** Small fast preview for the composer attachment strip. */
+export function createThumbnailPreview(file, maxDimension = PREVIEW_MAX_DIMENSION) {
+  return createResizedPreview(file, maxDimension, 0.85)
+}
+
+/** Higher-quality preview for images shown inside sent chat messages. */
+export function createDisplayPreview(file, maxDimension = DISPLAY_MAX_DIMENSION) {
+  return createResizedPreview(file, maxDimension, 0.92)
 }
