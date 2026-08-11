@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 const CHAT_OPENED_KEY = 'enox_chat_opened_once'
 const TOOLTIP_INTERVAL_MS = 30000
 const TOOLTIP_INITIAL_DELAY_MS = 1200
-const TOOLTIP_VISIBLE_MS = 8000
+const TOOLTIP_VISIBLE_MS = 20000
 
 export function useLauncherTooltip(isOpen) {
   const [showTooltip, setShowTooltip] = useState(false)
@@ -18,16 +18,24 @@ export function useLauncherTooltip(isOpen) {
     setShowTooltip(false)
   }, [])
 
+  const hideTooltip = useCallback(() => {
+    setShowTooltip(false)
+    if (hideTimerRef.current) {
+      clearTimeout(hideTimerRef.current)
+      hideTimerRef.current = null
+    }
+  }, [])
+
   const revealTooltip = useCallback(() => {
     if (tooltipDismissedForever || isOpen) return
     setShowTooltip(true)
   }, [isOpen, tooltipDismissedForever])
 
   useEffect(() => {
-    if (isOpen) {
-      dismissForever()
-    }
-  }, [isOpen, dismissForever])
+    if (!isOpen) return
+    hideTooltip()
+    dismissForever()
+  }, [isOpen, dismissForever, hideTooltip])
 
   useEffect(() => {
     if (isOpen || tooltipDismissedForever) return
@@ -49,13 +57,16 @@ export function useLauncherTooltip(isOpen) {
     }, TOOLTIP_VISIBLE_MS)
 
     return () => {
-      if (hideTimerRef.current) clearTimeout(hideTimerRef.current)
+      if (hideTimerRef.current) {
+        clearTimeout(hideTimerRef.current)
+        hideTimerRef.current = null
+      }
     }
   }, [showTooltip])
 
   return {
     showTooltip: showTooltip && !isOpen && !tooltipDismissedForever,
     dismissForever,
-    hideTooltip: () => setShowTooltip(false),
+    hideTooltip,
   }
 }

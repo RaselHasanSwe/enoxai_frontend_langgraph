@@ -142,8 +142,9 @@ export default function App({ hostElement = null }) {
               className="enox-launcher-tooltip-body"
               onClick={() => setOpen(true)}
             >
-              <span className="enox-launcher-tooltip-title">Hi, I'm EnoX</span>
-              <span className="enox-launcher-tooltip-text">Need help finding something?</span>
+              <span className="enox-launcher-tooltip-text">
+                Hi! I&apos;m EnoX AI, Need any assistance? I&apos;d be happy to help!
+              </span>
             </button>
             <button
               type="button"

@@ -662,30 +662,32 @@
 
 .enox-launcher-tooltip {
   position: absolute;
-  bottom: calc(100% + 12px);
-  right: 0;
+  right: calc(100% + 14px);
+  top: 50%;
+  transform: translateY(-50%);
   display: flex;
   align-items: flex-start;
-  gap: 6px;
-  max-width: 240px;
-  padding: 10px 12px;
+  gap: 8px;
+  width: max-content;
+  max-width: min(280px, calc(100vw - 80px));
+  padding: 12px 14px;
   background: #111111;
   color: #fff;
   border-radius: 12px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
-  animation: enox-tooltip-in 0.35s ease;
+  animation: enox-tooltip-in-left 0.35s ease;
   z-index: 1;
 }
 
 .enox-launcher-tooltip::after {
   content: '';
   position: absolute;
-  bottom: -6px;
-  right: 14px;
-  width: 12px;
-  height: 12px;
+  right: -5px;
+  top: 50%;
+  width: 10px;
+  height: 10px;
   background: #111111;
-  transform: rotate(45deg);
+  transform: translateY(-50%) rotate(45deg);
   border-radius: 2px;
 }
 
@@ -705,19 +707,11 @@
   text-decoration: underline;
 }
 
-.enox-launcher-tooltip-title {
-  display: block;
-  font-size: 13px;
-  font-weight: 600;
-  line-height: 1.3;
-}
-
 .enox-launcher-tooltip-text {
   display: block;
-  margin-top: 2px;
-  font-size: 12px;
-  line-height: 1.35;
-  color: rgba(255, 255, 255, 0.88);
+  font-size: 13px;
+  line-height: 1.45;
+  color: #ffffff;
 }
 
 .enox-launcher-tooltip-close {
@@ -739,14 +733,14 @@
   background: rgba(255, 255, 255, 0.22);
 }
 
-@keyframes enox-tooltip-in {
+@keyframes enox-tooltip-in-left {
   from {
     opacity: 0;
-    transform: translateY(6px);
+    transform: translateY(-50%) translateX(10px);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(-50%) translateX(0);
   }
 }
 
