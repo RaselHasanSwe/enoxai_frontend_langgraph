@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useChat } from './hooks/useChat'
 import { useLauncherTooltip } from './hooks/useLauncherTooltip'
+import { useBodyScrollLock } from './hooks/useBodyScrollLock'
 import UserForm from './components/UserForm'
 import ChatWindow from './components/ChatWindow'
 import './App.css'
@@ -25,6 +26,7 @@ export default function App({ hostElement = null }) {
 
   const chat = useChat()
   const { showTooltip, hideTooltip } = useLauncherTooltip(isOpen)
+  useBodyScrollLock(isOpen)
 
   useEffect(() => {
     if (!hostElement) return
