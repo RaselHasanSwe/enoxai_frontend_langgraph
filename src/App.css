@@ -241,13 +241,269 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 16px;
+  gap: 10px;
+  padding: 10px 14px 10px 16px;
   background: var(--enox-bg);
   border-bottom: 1px solid var(--enox-border);
   font-size: 13px;
   font-weight: 500;
   color: var(--enox-text);
   flex-shrink: 0;
+}
+
+.enox-chat-greeting > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.enox-chat-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.enox-btn-human {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 11px 0 9px;
+  border: none;
+  border-radius: 999px;
+  background: var(--enox-accent);
+  color: #fff;
+  font-size: 11.5px;
+  font-weight: 650;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  font-family: var(--enox-font);
+  white-space: nowrap;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+  transition: background 0.15s, transform 0.12s;
+}
+
+.enox-btn-human:hover {
+  background: var(--enox-accent-hover);
+}
+
+.enox-btn-human:active {
+  transform: scale(0.98);
+}
+
+.enox-btn-end {
+  display: inline-flex;
+  align-items: center;
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid var(--enox-border-strong);
+  border-radius: 999px;
+  background: var(--enox-bg);
+  color: var(--enox-text);
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: var(--enox-font);
+  white-space: nowrap;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.enox-btn-end:hover {
+  background: var(--enox-surface);
+  border-color: var(--enox-text);
+}
+
+.enox-status-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 16px;
+  background: var(--enox-surface);
+  border-bottom: 1px solid var(--enox-border);
+  color: var(--enox-text);
+  font-size: 12.5px;
+  line-height: 1.4;
+  flex-shrink: 0;
+}
+
+.enox-status-banner--agent {
+  background: #f4f4f4;
+}
+
+.enox-status-banner--error {
+  background: #fff5f5;
+  color: #b42318;
+}
+
+.enox-status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--enox-text-muted);
+  flex-shrink: 0;
+  animation: enox-pulse 1.4s ease-in-out infinite;
+}
+
+.enox-status-dot--live {
+  background: #16a34a;
+  animation: none;
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.16);
+}
+
+@keyframes enox-pulse {
+  0%, 100% { opacity: 0.35; }
+  50% { opacity: 1; }
+}
+
+.enox-feedback {
+  margin: 12px 12px 0;
+  padding: 16px 14px 14px;
+  background: var(--enox-bg);
+  border: 1px solid var(--enox-border);
+  border-radius: 12px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.05);
+  flex-shrink: 0;
+  text-align: center;
+}
+
+.enox-feedback--thanks {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.enox-feedback-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--enox-text);
+}
+
+.enox-feedback-sub {
+  margin: 4px 0 0;
+  font-size: 12.5px;
+  color: var(--enox-text-muted);
+  line-height: 1.45;
+}
+
+.enox-stars {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+  margin: 14px 0 4px;
+}
+
+.enox-star {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: #c8c8c8;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  transition: color 0.12s, transform 0.12s, background 0.12s;
+}
+
+.enox-star:hover,
+.enox-star:focus-visible {
+  background: var(--enox-surface);
+  outline: none;
+}
+
+.enox-star.is-filled {
+  color: #111111;
+}
+
+.enox-star:active {
+  transform: scale(0.94);
+}
+
+.enox-feedback-label {
+  margin: 0 0 12px;
+  min-height: 16px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--enox-text);
+}
+
+.enox-feedback-label.is-placeholder {
+  font-weight: 500;
+  color: var(--enox-text-muted);
+}
+
+.enox-feedback-comment {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 9px 11px;
+  border: 1.5px solid var(--enox-border);
+  border-radius: 8px;
+  font-size: 13px;
+  font-family: var(--enox-font);
+  color: var(--enox-text);
+  background: var(--enox-bg);
+  resize: none;
+  outline: none;
+  line-height: 1.45;
+  min-height: 56px;
+  transition: border-color 0.15s;
+}
+
+.enox-feedback-comment:focus {
+  border-color: var(--enox-accent);
+}
+
+.enox-feedback-comment::placeholder {
+  color: #9a9a9a;
+}
+
+.enox-feedback-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.enox-feedback-submit {
+  height: 34px;
+  padding: 0 16px;
+  border: none;
+  border-radius: 8px;
+  background: var(--enox-accent);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: var(--enox-font);
+  transition: background 0.15s, opacity 0.15s;
+}
+
+.enox-feedback-submit:hover:not(:disabled) {
+  background: var(--enox-accent-hover);
+}
+
+.enox-feedback-submit:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.enox-feedback-check {
+  width: 36px;
+  height: 36px;
+  margin-bottom: 8px;
+  border-radius: 50%;
+  background: #111111;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* ── Message list ────────────────────────────────────────────────────────── */

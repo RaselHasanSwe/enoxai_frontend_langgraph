@@ -1,5 +1,14 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { createUser, fetchHistory, streamMessage, BASE_URL } from '../api/chat'
+import {
+  requestHandoff,
+  getHandoffStatus,
+  sendHandoffMessage,
+  resolveHandoff,
+  submitFeedback,
+  connectHandoffWebSocket,
+  connectHandoffEventSource,
+} from '../api/handoff'
 import { parseAssistantMessage } from '../utils/parseMessageContent'
 import { createThumbnailPreview, createDisplayPreview, fileToBase64, validateImageFile } from '../utils/imagePreview'
 
@@ -31,8 +40,19 @@ export function useChat() {
   const [selectedImage, setSelectedImage] = useState(null)
   const [imagePreviewUrl, setImagePreviewUrl] = useState(null)
   const [imagePreviewLoading, setImagePreviewLoading] = useState(false)
+  const [chatMode, setChatMode] = useState('bot') // bot | queued | agent
+  const [handoffInfo, setHandoffInfo] = useState(null)
+  const [handoffError, setHandoffError] = useState('')
+  const [showFeedback, setShowFeedback] = useState(false)
+  const [feedbackSubmitted, setFeedbackSubmitted] = useState(false)
+  const [feedbackRating, setFeedbackRating] = useState(null)
+  const [feedbackComment, setFeedbackComment] = useState('')
 
   const streamController = useRef(null)
+  const handoffWsRef = useRef(null)
+  const handoffEsRef = useRef(null)
+  const handoffConnGenRef = useRef(0)
+  const queuePollRef = useRef(null)
   const nextId = useRef(0)
   const imageTaskRef = useRef(0)
   const preparedBase64Ref = useRef(null)
@@ -128,7 +148,211 @@ export function useChat() {
   useEffect(() => {
     if (!user) return
     loadHistory(user.id, 1, true)
+    refreshHandoffStatus()
   }, [user?.id])
+
+  function appendUniqueAssistantMessage(content) {
+    setMessages((prev) => {
+      const last = prev[prev.length - 1]
+      if (last?.role === 'assistant' && last.content === content && !last.streaming) {
+        return prev
+      }
+      return [
+        ...prev,
+        { id: makeId(), role: 'assistant', content, streaming: false },
+      ]
+    })
+  }
+
+  function handleHandoffEvent(event, data) {
+    if (event === 'agent_joined') {
+      setChatMode('agent')
+      setHandoffInfo((prev) => ({ ...prev, agent_name: data.agent_name, status: 'with_agent' }))
+      appendUniqueAssistantMessage(`${data.agent_name || 'An agent'} has joined the chat.`)
+    }
+    if (event === 'queue_update') {
+      setHandoffInfo(data)
+      if (data.status === 'queued') setChatMode('queued')
+      else if (data.status === 'with_agent') setChatMode('agent')
+    }
+    if (event === 'new_message' && data.sender_type === 'agent') {
+      appendUniqueAssistantMessage(data.message)
+    }
+    if (event === 'conversation_resolved') {
+      setChatMode('bot')
+      setShowFeedback(true)
+      setHandoffInfo(null)
+    }
+  }
+
+  function stopHandoffRealtime() {
+    handoffConnGenRef.current += 1
+    handoffWsRef.current?.close()
+    handoffWsRef.current = null
+    handoffEsRef.current?.close()
+    handoffEsRef.current = null
+    if (queuePollRef.current) {
+      clearInterval(queuePollRef.current)
+      queuePollRef.current = null
+    }
+  }
+
+  function startQueuePolling() {
+    if (queuePollRef.current || !user?.session_id) return
+    queuePollRef.current = setInterval(async () => {
+      try {
+        const status = await getHandoffStatus(user.session_id)
+        setHandoffInfo(status)
+        if (status.status === 'with_agent') {
+          setChatMode('agent')
+          stopHandoffRealtime()
+          startHandoffRealtime('agent')
+        } else if (status.status === 'queued') {
+          setChatMode('queued')
+        } else if (status.status === 'bot' || status.status === 'resolved') {
+          setChatMode('bot')
+          stopHandoffRealtime()
+        }
+      } catch {
+        // ignore transient polling errors
+      }
+    }, 5000)
+  }
+
+  function startHandoffRealtime(mode) {
+    if (!user?.session_id) return
+    stopHandoffRealtime()
+    const connGen = handoffConnGenRef.current
+
+    const isCurrentConnection = () => connGen === handoffConnGenRef.current
+
+    const startSseFallback = () => {
+      if (!isCurrentConnection() || handoffEsRef.current) return
+      handoffEsRef.current = connectHandoffEventSource(user.session_id, {
+        onEvent: (event, data) => {
+          if (!isCurrentConnection()) return
+          handleHandoffEvent(event, data)
+        },
+      })
+    }
+
+    handoffWsRef.current = connectHandoffWebSocket(user.session_id, {
+      onEvent: (event, data) => {
+        if (!isCurrentConnection()) return
+        handleHandoffEvent(event, data)
+      },
+      onClose: () => {
+        if (!isCurrentConnection()) return
+        handoffWsRef.current = null
+        startSseFallback()
+        if (mode === 'queued') startQueuePolling()
+      },
+      onError: () => {
+        if (!isCurrentConnection()) return
+        handoffWsRef.current?.close()
+        handoffWsRef.current = null
+        startSseFallback()
+      },
+    })
+
+    if (mode === 'queued') startQueuePolling()
+  }
+
+  useEffect(() => {
+    if (!user?.session_id || chatMode === 'bot') {
+      stopHandoffRealtime()
+      return
+    }
+    startHandoffRealtime(chatMode)
+    return () => stopHandoffRealtime()
+  }, [user?.session_id, chatMode])
+
+  async function refreshHandoffStatus() {
+    if (!user?.session_id) return
+    try {
+      const status = await getHandoffStatus(user.session_id)
+      setHandoffInfo(status)
+      if (status.status === 'queued') setChatMode('queued')
+      else if (status.status === 'with_agent') setChatMode('agent')
+      else setChatMode('bot')
+    } catch {
+      setChatMode('bot')
+    }
+  }
+
+  async function startHandoff(reason = 'Customer requested human support') {
+    if (!user || chatMode !== 'bot') return
+    setHandoffError('')
+    try {
+      const status = await requestHandoff(user.session_id, reason)
+      if (status.status === 'offline' || status.handoff_available === false) {
+        setHandoffInfo(status)
+        setChatMode('bot')
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: makeId(),
+            role: 'assistant',
+            content: status.message || 'Agents are currently offline. A support ticket has been created for you.',
+            streaming: false,
+          },
+        ])
+        return
+      }
+      setHandoffInfo(status)
+      setChatMode('queued')
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: makeId(),
+          role: 'assistant',
+          content: 'Connecting you to a human agent. Please wait…',
+          streaming: false,
+        },
+      ])
+    } catch (err) {
+      setHandoffError(err.message || 'Could not connect to an agent.')
+    }
+  }
+
+  async function sendAgentMessage(text) {
+    if (!user || chatMode !== 'agent') return
+    const trimmed = text.trim()
+    if (!trimmed) return
+    setMessages((prev) => [
+      ...prev,
+      { id: makeId(), role: 'user', content: trimmed, streaming: false },
+    ])
+    await sendHandoffMessage(user.session_id, trimmed)
+  }
+
+  async function endAgentChat() {
+    if (!user) return
+    try {
+      await resolveHandoff(user.session_id)
+      setChatMode('bot')
+      setShowFeedback(true)
+      setHandoffInfo(null)
+    } catch {
+      setHandoffError('Could not end agent chat.')
+    }
+  }
+
+  async function sendFeedback(rating, comment = '') {
+    if (!user) return
+    const finalRating = rating ?? feedbackRating
+    const finalComment = comment || feedbackComment
+    if (!finalRating) return
+    try {
+      await submitFeedback(user.session_id, finalRating, finalComment)
+      setFeedbackSubmitted(true)
+      setShowFeedback(false)
+      setFeedbackRating(null)
+      setFeedbackComment('')
+    } catch {
+      setHandoffError('Could not submit feedback.')
+    }
+  }
 
   async function loadHistory(userId, page, replace = false) {
     if (!user?.session_id) return
@@ -146,7 +370,7 @@ export function useChat() {
           imageUrl = `${BASE_URL}/chat/uploads/${m.image_path}`
         }
 
-        const isAssistant = m.role === 'ai'
+        const isAssistant = m.role === 'ai' || m.role === 'agent'
         const normalized = isAssistant
           ? parseAssistantMessage(m.message)
           : { content: m.message, products: undefined }
@@ -184,6 +408,14 @@ export function useChat() {
       const trimmedText = text.trim()
       const imageFile = selectedImage
       if ((!trimmedText && !imageFile) || isStreaming || !user) return
+
+      if (chatMode === 'agent') {
+        await sendAgentMessage(trimmedText)
+        setInputValue('')
+        return
+      }
+
+      if (chatMode === 'queued') return
 
       const messageImageUrl = displayUrlRef.current || imagePreviewUrl
       const messageText = trimmedText || 'Please help me with this image.'
@@ -300,7 +532,7 @@ export function useChat() {
         }
       )
     },
-    [isStreaming, user, selectedImage, imagePreviewUrl]
+    [isStreaming, user, selectedImage, imagePreviewUrl, chatMode]
   )
 
   function cancelStream() {
@@ -320,10 +552,34 @@ export function useChat() {
     setIsStreaming(false)
   }
 
+  async function continueWithAI() {
+    setShowFeedback(false)
+    setFeedbackSubmitted(false)
+    setFeedbackRating(null)
+    setFeedbackComment('')
+    setHandoffError('')
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: makeId(),
+        role: 'assistant',
+        content: 'You are back with EnoX. How can I help you?',
+        streaming: false,
+      },
+    ])
+  }
+
   function clearUser() {
     localStorage.removeItem(STORAGE_KEY)
+    stopHandoffRealtime()
     setUser(null)
     setMessages([])
+    setChatMode('bot')
+    setHandoffInfo(null)
+    setShowFeedback(false)
+    setFeedbackSubmitted(false)
+    setFeedbackRating(null)
+    setFeedbackComment('')
   }
 
   return {
@@ -346,5 +602,18 @@ export function useChat() {
     imagePreviewLoading,
     selectImage,
     clearSelectedImage,
+    chatMode,
+    handoffInfo,
+    handoffError,
+    startHandoff,
+    endAgentChat,
+    showFeedback,
+    feedbackSubmitted,
+    feedbackRating,
+    setFeedbackRating,
+    feedbackComment,
+    setFeedbackComment,
+    sendFeedback,
+    continueWithAI,
   }
 }
